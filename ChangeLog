@@ -1,3 +1,13 @@
+2008-10-24  Emmanuele Bassi  <ebassi@linux.intel.com>
+
+	Merge from trunk:
+
+	Bug 1201 - test-depth.c:14: error: ‘raise’ redeclared as
+	different kind of symbol (Owen Taylor)
+
+	* tests/test-depth.c (raise_top), (main): Fix a shadowing
+	with raise() from signal.h.
+
 2008-10-21  Emmanuele Bassi  <ebassi@linux.intel.com>
 
 	Merge from trunk:
