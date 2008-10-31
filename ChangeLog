@@ -1,3 +1,14 @@
+2008-10-31  Matthew Allum  <mallum@linux.intel.com>
+
+        Merge from trunk:    
+
+        * clutter/clutter-texture.c: (clutter_texture_set_filter_quality),
+        (clutter_texture_get_filter_quality):
+        Fix up some logic, typos.
+
+        * clutter/glx/clutter-glx-texture-pixmap.c:
+        Improve support for mipmaped TFP textures.
+
 2008-10-29  Neil Roberts  <neil@linux.intel.com>
 
 	Bug 1074 - FBOs on GLES
