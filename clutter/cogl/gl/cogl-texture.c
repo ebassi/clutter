@@ -1952,6 +1952,29 @@ _cogl_texture_quad_sw (CoglTexture *tex,
   
   cogl_enable (enable_flags);
   
+  /* If the texture coordinates are backwards then swap both the
+     geometry and texture coordinates so that the texture will be
+     flipped but we can still use the same algorithm to iterate the
+     slices */
+  if (tx2 < tx1)
+    {
+      ClutterFixed temp = x1;
+      x1 = x2;
+      x2 = temp;
+      temp = tx1;
+      tx1 = tx2;
+      tx2 = temp;
+    }
+  if (ty2 < ty1)
+    {
+      ClutterFixed temp = y1;
+      y1 = y2;
+      y2 = temp;
+      temp = ty1;
+      ty1 = ty2;
+      ty2 = temp;
+    }
+  
   /* Scale ratio from texture to quad widths */
   tw = CLUTTER_INT_TO_FIXED (tex->bitmap.width);
   th = CLUTTER_INT_TO_FIXED (tex->bitmap.height);
@@ -2150,7 +2173,6 @@ cogl_texture_rectangle (CoglHandle   handle,
 			ClutterFixed ty2)
 {
   CoglTexture       *tex;
-  ClutterFixed       tempx;
   
   /* Check if valid texture */
   if (!cogl_is_texture (handle))
@@ -2167,38 +2189,6 @@ cogl_texture_rectangle (CoglHandle   handle,
   
   if (tx1 == tx2 || ty1 == ty2)
     return;
-  
-  /* Fix quad coord ordering 
-     (atm this is required for sw tiling to iterate
-      over slices properly) */
-  if (x1 > x2)
-    {
-      tempx = x1;
-      x1 = x2;
-      x2 = tempx;
-    }
-  
-  if (y1 > y2)
-    {
-      tempx = y1;
-      y1 = y2;
-      y2 = tempx;
-    }
-  
-  /* Fix texture coord ordering */
-  if (tx1 > tx2)
-    {
-      tempx = tx1;
-      tx1 = tx2;
-      tx2 = tempx;
-    }
-  
-  if (ty1 > ty2)
-    {
-      tempx = ty1;
-      ty1 = ty2;
-      ty2 = tempx;
-    }
   
   /* Pick tiling mode according to hw support */
   if (cogl_features_available (COGL_FEATURE_TEXTURE_NPOT)
