@@ -1,5 +1,12 @@
 2008-11-13  Neil Roberts  <neil@linux.intel.com>
 
+	* clutter/clutter-actor.c (clutter_actor_get_paint_visibility):
+	Fix logic so that it won't return TRUE for a hidden stage.
+
+	Merged from trunk.
+
+2008-11-13  Neil Roberts  <neil@linux.intel.com>
+
 	* clutter/clutter-actor.c (clutter_actor_get_reactive)
 	(clutter_actor_get_paint_visibility): Be sure to return exactly
 	TRUE or FALSE instead of zero or some non-zero value in these
