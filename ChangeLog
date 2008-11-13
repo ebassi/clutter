@@ -2,6 +2,13 @@
 
 	Merge from trunk:
 
+	* clutter/clutter-media.c: Improve documentation of the
+	ClutterMedia interface.
+
+2008-11-13  Emmanuele Bassi  <ebassi@linux.intel.com>
+
+	Merge from trunk:
+
 	* clutter/clutter-behaviour-ellipse.c:
 	(clutter_behaviour_ellipse_applied): Do not reset the depth
 	of the actors to which the Ellipse behaviour has been applied
