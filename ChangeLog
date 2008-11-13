@@ -1,5 +1,16 @@
 2008-11-13  Neil Roberts  <neil@linux.intel.com>
 
+	* clutter/cogl/gles/cogl-gles2-wrapper.h:
+	* clutter/cogl/gles/cogl-gles2-wrapper.c:
+	Initialise the 'tex' sampler uniform to 0. The GLSL spec
+	specifically says that you must initialize sampler uniforms. This
+	fixes texturing for GLES 2 when using the PowerVR simulator via
+	software Mesa.
+
+	Merged from trunk.
+
+2008-11-13  Neil Roberts  <neil@linux.intel.com>
+
 	* clutter/clutter-actor.c (clutter_actor_get_paint_visibility):
 	Fix logic so that it won't return TRUE for a hidden stage.
 

@@ -450,6 +450,9 @@ cogl_gles2_wrapper_get_uniforms (GLuint program,
 
   uniforms->alpha_test_ref_uniform
     = glGetUniformLocation (program, "alpha_test_ref");
+
+  uniforms->texture_unit_uniform
+    = glGetUniformLocation (program, "texture_unit");
 }
 
 void
@@ -874,6 +877,10 @@ cogl_wrap_glDrawArrays (GLenum mode, GLint first, GLsizei count)
 	  && program->uniforms.alpha_test_ref_uniform != -1)
 	glUniform1f (program->uniforms.alpha_test_ref_uniform,
 		     w->alpha_test_ref);
+
+      if ((w->dirty_uniforms & COGL_GLES2_DIRTY_TEXTURE_UNIT)
+          && program->uniforms.texture_unit_uniform != -1)
+        glUniform1i (program->uniforms.texture_unit_uniform, 0);
 
       w->dirty_uniforms = 0;
     }
