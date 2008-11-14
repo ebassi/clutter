@@ -5,6 +5,19 @@
 static gint level = 1;
 
 static void
+on_score_started (ClutterScore *score)
+{
+  g_print ("Score started\n");
+}
+
+static void
+on_score_completed (ClutterScore *score)
+{
+  g_print ("Score completed\n");
+  clutter_main_quit ();
+}
+
+static void
 on_timeline_started (ClutterScore    *score,
                      ClutterTimeline *timeline)
 {
@@ -74,6 +87,9 @@ main (int argc, char **argv)
                           g_free);
 
   score = clutter_score_new();
+  g_signal_connect (score, "started",
+                    G_CALLBACK (on_score_started),
+                    NULL);
   g_signal_connect (score, "timeline-started",
                     G_CALLBACK (on_timeline_started),
                     NULL);
@@ -81,7 +97,7 @@ main (int argc, char **argv)
                     G_CALLBACK (on_timeline_completed),
                     NULL);
   g_signal_connect (score, "completed",
-                    G_CALLBACK (clutter_main_quit),
+                    G_CALLBACK (on_score_completed),
                     NULL);
 
   clutter_score_append (score, NULL,       timeline_1);

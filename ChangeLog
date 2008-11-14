@@ -1,3 +1,14 @@
+2008-11-14  Emmanuele Bassi  <ebassi@linux.intel.com>
+
+	Merge from trunk:
+
+	Bug 1265 - ClutterScore doesn't emit 'started' signal (Bastian
+	Winkler)
+
+	* clutter/clutter-score.c: Emit the ::started signal.
+
+	* tests/test-score.c: Check the emission of the Score signals
+
 2008-11-13  Emmanuele Bassi  <ebassi@linux.intel.com>
 
 	Merge from trunk:
