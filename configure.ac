@@ -379,11 +379,6 @@ case $clutterbackend in
       AC_MSG_ERROR([GLX not found and GLX backend requested]);
     fi
 
-    if test "x$imagebackend" = "xgdk-pixbuf"; then
-        # xlib pixbuf needed for exporting the stage
-        BACKEND_PC_FILES="gdk-pixbuf-xlib-2.0"
-    fi
-
     GLX_LIBS="$X11_LIBS -lGL"
     GLX_CFLAGS="$X11_CFLAGS"
     backendextra=x11
@@ -523,7 +518,7 @@ AM_CONDITIONAL(LOCAL_JSON_GLIB, test "x$have_json" = "xno")
 CLUTTER_REQUIRES="pangocairo >= 1.18 glib-2.0 >= 2.14 gobject-2.0 gthread-2.0 gmodule-no-export-2.0 $BACKEND_PC_FILES $JSON_GLIB_PC"
 
 if test "x$imagebackend" = "xgdk-pixbuf"; then
-        CLUTTER_REQUIRES="$CLUTTER_REQUIRES gdk-pixbuf-2.0"
+  CLUTTER_REQUIRES="$CLUTTER_REQUIRES gdk-pixbuf-2.0"
 fi
 
 PKG_CHECK_MODULES(CLUTTER_DEPS, [$CLUTTER_REQUIRES])
