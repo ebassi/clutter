@@ -502,6 +502,9 @@ clutter_group_real_raise (ClutterContainer *container,
     {
       clutter_actor_set_depth (actor, clutter_actor_get_depth (sibling));
     }
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (container))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (container));
 }
 
 static void
@@ -541,6 +544,9 @@ clutter_group_real_lower (ClutterContainer *container,
     {
       clutter_actor_set_depth (actor, clutter_actor_get_depth (sibling));
     }
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (container))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (container));
 }
 
 static gint
