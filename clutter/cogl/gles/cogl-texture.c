@@ -1926,9 +1926,9 @@ _cogl_texture_flush_vertices (void)
             }
         }
 
-      GE( cogl_wrap_glVertexPointer (2, GL_FIXED,
+      GE( cogl_wrap_glVertexPointer (2, GL_FLOAT,
                                      sizeof (CoglTextureGLVertex), p->v ) );
-      GE( cogl_wrap_glTexCoordPointer (2, GL_FIXED,
+      GE( cogl_wrap_glTexCoordPointer (2, GL_FLOAT,
                                        sizeof (CoglTextureGLVertex), p->t ) );
 
       GE( cogl_gles2_wrapper_bind_texture (ctx->texture_target,
@@ -1945,10 +1945,10 @@ _cogl_texture_flush_vertices (void)
 }
 
 static void
-_cogl_texture_add_quad_vertices (GLfixed x1, GLfixed y1,
-                                 GLfixed x2, GLfixed y2,
-                                 GLfixed tx1, GLfixed ty1,
-                                 GLfixed tx2, GLfixed ty2)
+_cogl_texture_add_quad_vertices (GLfloat x1, GLfloat y1,
+                                 GLfloat x2, GLfloat y2,
+                                 GLfloat tx1, GLfloat ty1,
+                                 GLfloat tx2, GLfloat ty2)
 {
   CoglTextureGLVertex *p;
   GLushort first_vert;
@@ -2124,10 +2124,14 @@ _cogl_texture_quad_sw (CoglTexture *tex,
           ctx->texture_current = gl_handle;
           ctx->texture_format = tex->gl_intformat;
 
-          _cogl_texture_add_quad_vertices (slice_qx1, slice_qy1,
-                                           slice_qx2, slice_qy2,
-                                           slice_tx1, slice_ty1,
-                                           slice_tx2, slice_ty2);
+          _cogl_texture_add_quad_vertices (CLUTTER_FIXED_TO_FLOAT (slice_qx1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_qy1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_qx2),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_qy2),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_tx1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_ty1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_tx2),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_ty2));
 	}
     }
 }
@@ -2173,8 +2177,14 @@ _cogl_texture_quad_hw (CoglTexture *tex,
   ty1 = ty1 * (y_span->size - y_span->waste) / y_span->size;
   ty2 = ty2 * (y_span->size - y_span->waste) / y_span->size;
 
-  _cogl_texture_add_quad_vertices (x1, y1, x2, y2,
-                                   tx1, ty1, tx2, ty2);
+  _cogl_texture_add_quad_vertices (CLUTTER_FIXED_TO_FLOAT (x1),
+                                   CLUTTER_FIXED_TO_FLOAT (y1),
+                                   CLUTTER_FIXED_TO_FLOAT (x2),
+                                   CLUTTER_FIXED_TO_FLOAT (y2),
+                                   CLUTTER_FIXED_TO_FLOAT (tx1),
+                                   CLUTTER_FIXED_TO_FLOAT (ty1),
+                                   CLUTTER_FIXED_TO_FLOAT (tx2),
+                                   CLUTTER_FIXED_TO_FLOAT (ty2));
 }
 
 void
@@ -2330,13 +2340,13 @@ cogl_texture_polygon (CoglHandle         handle,
   if (use_color)
     {
       enable_flags |= COGL_ENABLE_COLOR_ARRAY;
-      GE( cogl_wrap_glColorPointer (4, GL_FIXED,
+      GE( cogl_wrap_glColorPointer (4, GL_FLOAT,
                                     sizeof (CoglTextureGLVertex), p->c) );
     }
 
-  GE( cogl_wrap_glVertexPointer (3, GL_FIXED,
+  GE( cogl_wrap_glVertexPointer (3, GL_FLOAT,
                                  sizeof (CoglTextureGLVertex), p->v ) );
-  GE( cogl_wrap_glTexCoordPointer (2, GL_FIXED,
+  GE( cogl_wrap_glTexCoordPointer (2, GL_FLOAT,
                                    sizeof (CoglTextureGLVertex), p->t ) );
 
   cogl_enable (enable_flags);
@@ -2349,15 +2359,21 @@ cogl_texture_polygon (CoglHandle         handle,
      OpenGL */
   for (i = 0; i < n_vertices; i++, p++)
     {
-      p->v[0] = vertices[i].x;
-      p->v[1] = vertices[i].y;
-      p->v[2] = vertices[i].z;
-      p->t[0] = vertices[i].tx * (x_span->size - x_span->waste) / x_span->size;
-      p->t[1] = vertices[i].ty * (y_span->size - y_span->waste) / y_span->size;
-      p->c[0] = (vertices[i].color.red << 16) / 0xff;
-      p->c[1] = (vertices[i].color.green << 16) / 0xff;
-      p->c[2] = (vertices[i].color.blue << 16) / 0xff;
-      p->c[3] = (vertices[i].color.alpha << 16) / 0xff;
+#define CFX_F CLUTTER_FIXED_TO_FLOAT
+
+      p->v[0] = CFX_F (vertices[i].x);
+      p->v[1] = CFX_F (vertices[i].y);
+      p->v[2] = CFX_F (vertices[i].z);
+      p->t[0] = CFX_F (vertices[i].tx
+                       * (x_span->size - x_span->waste) / x_span->size);
+      p->t[1] = CFX_F (vertices[i].ty
+                       * (y_span->size - y_span->waste) / y_span->size);
+      p->c[0] = vertices[i].color.red / 255.0f;
+      p->c[1] = vertices[i].color.green / 255.0f;
+      p->c[2] = vertices[i].color.blue / 255.0f;
+      p->c[3] = vertices[i].color.alpha / 255.0f;
+
+#undef CFX_F
     }
 
   GE( cogl_gles2_wrapper_bind_texture (tex->gl_target, gl_handle,
