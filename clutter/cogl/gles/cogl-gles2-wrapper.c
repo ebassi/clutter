@@ -804,8 +804,8 @@ cogl_wrap_glColorPointer (GLint size, GLenum type, GLsizei stride,
 			 GL_FALSE, stride, pointer);
 }
 
-void
-cogl_wrap_glDrawArrays (GLenum mode, GLint first, GLsizei count)
+static void
+cogl_wrap_prepare_for_draw (void)
 {
   CoglGles2WrapperProgram *program;
 
@@ -911,8 +911,23 @@ cogl_wrap_glDrawArrays (GLenum mode, GLint first, GLsizei count)
       
       w->dirty_custom_uniforms = 0;
     }
+}
+
+void
+cogl_wrap_glDrawArrays (GLenum mode, GLint first, GLsizei count)
+{
+  cogl_wrap_prepare_for_draw ();
 
   glDrawArrays (mode, first, count);
+}
+
+void
+cogl_wrap_glDrawElements (GLenum mode, GLsizei count, GLenum type,
+                          const GLvoid *indices)
+{
+  cogl_wrap_prepare_for_draw ();
+
+  glDrawElements (mode, count, type, indices);
 }
 
 void

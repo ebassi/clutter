@@ -1931,13 +1931,14 @@ _cogl_texture_flush_vertices (void)
       GE( cogl_wrap_glTexCoordPointer (2, GL_FIXED,
                                        sizeof (CoglTextureGLVertex), p->t ) );
 
-      GE( glBindTexture (ctx->texture_target,
-                         ctx->texture_current) );
+      GE( cogl_gles2_wrapper_bind_texture (ctx->texture_target,
+                                           ctx->texture_current,
+                                           ctx->texture_format) );
 
-      GE( glDrawElements (GL_TRIANGLES,
-                          needed_indices,
-                          GL_UNSIGNED_SHORT,
-                          ctx->texture_indices->data) );
+      GE( cogl_wrap_glDrawElements (GL_TRIANGLES,
+                                    needed_indices,
+                                    GL_UNSIGNED_SHORT,
+                                    ctx->texture_indices->data) );
 
       g_array_set_size (ctx->texture_vertices, 0);
     }
@@ -2121,6 +2122,7 @@ _cogl_texture_quad_sw (CoglTexture *tex,
             _cogl_texture_flush_vertices ();
           ctx->texture_target = tex->gl_target;
           ctx->texture_current = gl_handle;
+          ctx->texture_format = tex->gl_intformat;
 
           _cogl_texture_add_quad_vertices (slice_qx1, slice_qy1,
                                            slice_qx2, slice_qy2,
@@ -2161,6 +2163,7 @@ _cogl_texture_quad_hw (CoglTexture *tex,
     _cogl_texture_flush_vertices ();
   ctx->texture_target = tex->gl_target;
   ctx->texture_current = gl_handle;
+  ctx->texture_format = tex->gl_intformat;
 
   /* Don't include the waste in the texture coordinates */
   x_span = &g_array_index (tex->slice_x_spans, CoglTexSliceSpan, 0);
