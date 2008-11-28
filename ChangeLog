@@ -1,3 +1,11 @@
+2008-11-28  Emmanuele Bassi  <ebassi@linux.intel.com>
+
+	Bug 1291 - file name not given when invalid external json structure
+	loaded
+
+	* clutter/json/json-parser.c: Add the name of the file to the
+	error messages, when using load_from_file().
+
 2008-11-26  Emmanuele Bassi  <ebassi@linux.intel.com>
 
 	Merge from trunk:
