@@ -774,6 +774,29 @@ if (gl_target ==  GL_TEXTURE_2D)
     }
 }
 
+static void
+_cogl_texture_set_wrap_mode_parameter (CoglTexture *tex,
+                                       GLenum wrap_mode)
+{
+  /* Only set the wrap mode if it's different from the current
+     value to avoid too many GL calls */
+  if (tex->wrap_mode != wrap_mode)
+    {
+      int i;
+
+      for (i = 0; i < tex->slice_gl_handles->len; i++)
+        {
+          GLuint texnum = g_array_index (tex->slice_gl_handles, GLuint, i);
+
+          GE( glBindTexture (tex->gl_target, texnum) );
+          GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_S, wrap_mode) );
+          GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_T, wrap_mode) );
+        }
+
+      tex->wrap_mode = wrap_mode;
+    }
+}
+
 static gboolean
 _cogl_texture_slices_create (CoglTexture *tex)
 {  
@@ -901,15 +924,10 @@ _cogl_texture_slices_create (CoglTexture *tex)
 					     n_slices);
   
   g_array_set_size (tex->slice_gl_handles, n_slices);
-  
-  
-  /* Hardware repeated tiling if supported, else tile in software*/
-  if (cogl_features_available (COGL_FEATURE_TEXTURE_NPOT)
-      && n_slices == 1)
-    tex->wrap_mode = GL_REPEAT;
-  else
-    tex->wrap_mode = GL_CLAMP_TO_EDGE;
-  
+
+  /* Wrap mode not yet set */
+  tex->wrap_mode = GL_FALSE;
+
   /* Generate a "working set" of GL texture objects
    * (some implementations might supported faster
    *  re-binding between textures inside a set) */
@@ -937,12 +955,7 @@ _cogl_texture_slices_create (CoglTexture *tex)
 	  GE( glBindTexture   (tex->gl_target, gl_handles[y * n_x_slices + x]) );
 	  GE( glTexParameteri (tex->gl_target, GL_TEXTURE_MAG_FILTER, tex->mag_filter) );
 	  GE( glTexParameteri (tex->gl_target, GL_TEXTURE_MIN_FILTER, tex->min_filter) );
-	  
-	  GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_S,
-			       tex->wrap_mode) );
-	  GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_T,
-			       tex->wrap_mode) );
-          
+
           if (tex->auto_mipmap)
             GE( glTexParameteri (tex->gl_target, GL_GENERATE_MIPMAP, GL_TRUE) );
           
@@ -1515,6 +1528,9 @@ cogl_texture_new_from_foreign (GLuint           gl_handle,
   tex->min_filter = gl_min_filter;
   tex->mag_filter = gl_mag_filter;
   tex->max_waste = 0;
+
+  /* Wrap mode not yet set */
+  tex->wrap_mode = GL_FALSE;
   
   /* Create slice arrays */
   tex->slice_x_spans =
@@ -1541,24 +1557,7 @@ cogl_texture_new_from_foreign (GLuint           gl_handle,
   g_array_append_val (tex->slice_y_spans, y_span);
   
   g_array_append_val (tex->slice_gl_handles, gl_handle);
-  
-  /* Force appropriate wrap parameter */
-  if (cogl_features_available (COGL_FEATURE_TEXTURE_NPOT) &&
-      gl_target == GL_TEXTURE_2D)
-    {
-      /* Hardware repeated tiling */
-      tex->wrap_mode = GL_REPEAT;
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_S, GL_REPEAT) );
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_T, GL_REPEAT) );
-    }
-  else
-    {
-      /* Any tiling will be done in software */
-      tex->wrap_mode = GL_CLAMP_TO_EDGE;
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-    }
-  
+
   return _cogl_texture_handle_new (tex);
 }
 
@@ -1951,7 +1950,11 @@ _cogl_texture_quad_sw (CoglTexture *tex,
     }
   
   cogl_enable (enable_flags);
-  
+
+  /* We can't use hardware repeat so we need to set clamp to edge
+     otherwise it might pull in edge pixels from the other side */
+  _cogl_texture_set_wrap_mode_parameter (tex, GL_CLAMP_TO_EDGE);
+
   /* If the texture coordinates are backwards then swap both the
      geometry and texture coordinates so that the texture will be
      flipped but we can still use the same algorithm to iterate the
@@ -2125,7 +2128,18 @@ _cogl_texture_quad_hw (CoglTexture *tex,
     }
   
   cogl_enable (enable_flags);
-  
+
+  /* If the texture coords are all in the range [0,1] then we want to
+     clamp the coords to the edge otherwise it can pull in edge pixels
+     from the wrong side when scaled */
+  if (tx1 >= 0 && tx1 <= CFX_ONE
+      && tx2 >= 0 && tx2 <= CFX_ONE
+      && ty1 >= 0 && ty1 <= CFX_ONE
+      && ty2 >= 0 && ty2 <= CFX_ONE)
+    _cogl_texture_set_wrap_mode_parameter (tex, GL_CLAMP_TO_EDGE);
+  else
+    _cogl_texture_set_wrap_mode_parameter (tex, GL_REPEAT);
+
   /* Pick and bind opengl texture object */
   gl_handle = g_array_index (tex->slice_gl_handles, GLuint, 0);
   GE( glBindTexture (tex->gl_target, gl_handle) );
@@ -2248,15 +2262,7 @@ cogl_texture_polygon (CoglHandle         handle,
 
   /* Temporarily change the wrapping mode on all of the slices to use
      a transparent border */
-  for (i = 0; i < tex->slice_gl_handles->len; i++)
-    {
-      GE( glBindTexture (tex->gl_target,
-			 g_array_index (tex->slice_gl_handles, GLuint, i)) );
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_S,
-			   GL_CLAMP_TO_BORDER) );
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_T,
-			   GL_CLAMP_TO_BORDER) );
-    }
+  _cogl_texture_set_wrap_mode_parameter (tex, GL_CLAMP_TO_BORDER);
 
   i = 0;
 
@@ -2302,14 +2308,5 @@ cogl_texture_polygon (CoglHandle         handle,
 
 	  GE( glEnd () );
 	}
-    }
-  
-  /* Restore the wrapping mode */
-  for (i = 0; i < tex->slice_gl_handles->len; i++)
-    {
-      GE( glBindTexture (tex->gl_target,
-			 g_array_index (tex->slice_gl_handles, GLuint, i)) );
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_S, tex->wrap_mode) );
-      GE( glTexParameteri (tex->gl_target, GL_TEXTURE_WRAP_T, tex->wrap_mode) );
     }
 }
