@@ -1,3 +1,14 @@
+2008-12-01  Emmanuele Bassi  <ebassi@linux.intel.com>
+
+	* configure.ac: Post-release bump to 0.8.5
+
+======== Release 0.8.4 ========================================================
+
+2008-12-01  Emmanuele Bassi  <ebassi@linux.intel.com>
+
+	* NEWS:
+	* README: Release 0.8.4
+
 2008-11-28  Emmanuele Bassi  <ebassi@linux.intel.com>
 
 	Bug 1291 - file name not given when invalid external json structure

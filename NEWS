@@ -1,3 +1,39 @@
+Clutter 0.8.4 (29/11/2008)
+===============================================================================
+
+ * List of changes between 0.8.2 and 0.8.4
+
+   o Documentation improvements
+   o Add clutter_actor_get_paint_visibility(), for checking the visibility
+     of an actor taking into account the visibility of its parents
+   o Texture-from-pixmap actor improvements
+   o Add support for ClutterColor-based properties
+   o Remove a stray dependency on gdk-pixbuf-xlib-2.0
+   o ClutterGroup will queue a repaint when raising/lowering children
+
+ * List of bugs fixed since 0.8.2
+
+   o #1043 - COGL calls glTexSubImage2D() with out-of-bounds values (SIGSEGV)
+   o #1057 - cogl_texture_rectangle doesn't support backward coordinates
+   o #1074 - FBOs on GLES
+   o #1195 - ClutterBehaviourBspline only works for very short paths
+   o #1196 - Texture border drawing problems
+   o #1197 - Missing const for clutter_init_with_args *
+   o #1200 - Crash with invalid DISPLAY
+   o #1201 - test-depth.c:14: error: ‘raise’ redeclared as different
+             kind of symbol
+   o #1206 - Picking disabled dithering
+   o #1207 - Timelines sometime miss markers
+   o #1230 - Pick fails on low precision color buffers
+   o #1237 - clutter_texture_set_filter_quality calls
+             clutter_texture_[un]realize
+   o #1238 - [PATCH] Pack bitfields in ClutterTexturePrivate
+   o #1265 - ClutterScore doesn't emit 'started' signal.
+   o #1280 - clutter_score_append_at_marker lead to segfault
+   o #1291 - file name not given when invalid external json structure loaded
+   o #1299 - clutter_score_remove will segfault if timelines are
+             more than 52 and continue to remove them
+
 Clutter 0.8.2 (25/09/2008)
 ===============================================================================
 

@@ -331,6 +331,13 @@ Release Notes for Clutter 0.8
 
 * ClutterContainer can have per child custom properties via ClutterChildMeta. 
 
+* ClutterBehaviourEllipse will not change the depth of an actor when
+  it is applied to it, unless the behaviour has a tilt angle on the X
+  or the Y different than zero.
+
+* A stray dependency on gdk-pixbuf-xlib-2.0 has been removed. Clutter has
+  not been using the Xlib-specific API of GdkPixbuf since 0.8.
+
 Release Notes for Clutter 0.6
 -------------------------------
 
