@@ -314,7 +314,13 @@ cogl_enable (gulong flags)
   cogl_toggle_flag (ctx, flags,
 		    COGL_ENABLE_TEXTURE_2D,
 		    GL_TEXTURE_2D);
-  
+
+#ifdef GL_TEXTURE_RECTANGLE_ARB
+  cogl_toggle_flag (ctx, flags,
+		    COGL_ENABLE_TEXTURE_RECT,
+		    GL_TEXTURE_RECTANGLE_ARB);
+#endif
+
   cogl_toggle_client_flag (ctx, flags,
 			   COGL_ENABLE_VERTEX_ARRAY,
 			   GL_VERTEX_ARRAY);

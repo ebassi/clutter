@@ -1434,9 +1434,15 @@ cogl_texture_new_from_foreign (GLuint           gl_handle,
   CoglTexture     *tex;
   CoglTexSliceSpan x_span;
   CoglTexSliceSpan y_span;
-  
-  /* Allow 2-dimensional textures only */
-  if (gl_target != GL_TEXTURE_2D)
+
+  /* GL_ARB_texture_rectangle textures are supported if they are
+     created from foreign because some chipsets have trouble with
+     GL_ARB_texture_non_power_of_two. There is no Cogl call to create
+     them directly to emphasize the fact that they don't work fully
+     (for example, no mipmapping and complicated shader support) */
+
+  /* Allow 2-dimensional or rectangle textures only */
+  if (gl_target != GL_TEXTURE_2D && gl_target != CGL_TEXTURE_RECTANGLE_ARB)
     return COGL_INVALID_HANDLE;
   
   /* Make sure it is a valid GL texture object */
@@ -1939,10 +1945,13 @@ _cogl_texture_quad_sw (CoglTexture *tex,
 #if COGL_DEBUG
   printf("=== Drawing Tex Quad (Software Tiling Mode) ===\n");
 #endif
-  
+
   /* Prepare GL state */
-  enable_flags |= COGL_ENABLE_TEXTURE_2D;
-  
+  if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
+    enable_flags |= COGL_ENABLE_TEXTURE_RECT;
+  else
+    enable_flags |= COGL_ENABLE_TEXTURE_2D;
+
   if (ctx->color_alpha < 255
       || tex->bitmap.format & COGL_A_BIT)
     {
@@ -2017,17 +2026,19 @@ _cogl_texture_quad_sw (CoglTexture *tex,
       
       slice_qy2 = first_qy +
 	CFX_QMUL (iter_y.intersect_end - first_ty, tqy);
-      
+
       /* Localize slice texture coordinates */
       slice_ty1 = iter_y.intersect_start - iter_y.pos;
       slice_ty2 = iter_y.intersect_end - iter_y.pos;
-      
+
       /* Normalize texture coordinates to current slice
          (rectangle texture targets take denormalized) */
-      slice_ty1 /= iter_y.span->size;
-      slice_ty2 /= iter_y.span->size;
-      
-      
+      if (tex->gl_target != CGL_TEXTURE_RECTANGLE_ARB)
+        {
+          slice_ty1 /= iter_y.span->size;
+          slice_ty2 /= iter_y.span->size;
+        }
+
       /* Iterate until whole quad width covered */
       for (_cogl_span_iter_begin (&iter_x, tex->slice_x_spans,
 				  first_tx, tx1, tx2) ;
@@ -2047,12 +2058,15 @@ _cogl_texture_quad_sw (CoglTexture *tex,
 	  /* Localize slice texture coordinates */
 	  slice_tx1 = iter_x.intersect_start - iter_x.pos;
 	  slice_tx2 = iter_x.intersect_end - iter_x.pos;
-	  
+
 	  /* Normalize texture coordinates to current slice
              (rectangle texture targets take denormalized) */
-          slice_tx1 /= iter_x.span->size;
-          slice_tx2 /= iter_x.span->size;
-	  
+          if (tex->gl_target != CGL_TEXTURE_RECTANGLE_ARB)
+            {
+              slice_tx1 /= iter_x.span->size;
+              slice_tx2 /= iter_x.span->size;
+            }
+
 #if COGL_DEBUG
 	  printf("~~~~~ slice (%d,%d)\n", iter_x.index, iter_y.index);
 	  printf("qx1: %f\n", CLUTTER_FIXED_TO_FLOAT (slice_qx1));
@@ -2119,8 +2133,11 @@ _cogl_texture_quad_hw (CoglTexture *tex,
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
   
   /* Prepare GL state */
-  enable_flags |= COGL_ENABLE_TEXTURE_2D;
-  
+  if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
+    enable_flags |= COGL_ENABLE_TEXTURE_RECT;
+  else
+    enable_flags |= COGL_ENABLE_TEXTURE_2D;
+
   if (ctx->color_alpha < 255
       || tex->bitmap.format & COGL_A_BIT)
     {
@@ -2153,8 +2170,17 @@ _cogl_texture_quad_hw (CoglTexture *tex,
   ty1 = ty1 * (y_span->size - y_span->waste) / y_span->size;
   ty2 = ty2 * (y_span->size - y_span->waste) / y_span->size;
 
+  /* Denormalize texture coordinates for rectangle textures */
+  if (tex->gl_target == GL_TEXTURE_RECTANGLE_ARB)
+    {
+      tx1 *= x_span->size;
+      tx2 *= x_span->size;
+      ty1 *= y_span->size;
+      ty2 *= y_span->size;
+    }
+
 #define CFX_F(x) CLUTTER_FIXED_TO_FLOAT(x)
-  
+
   /* Draw textured quad */
   glBegin (GL_QUADS);
   
@@ -2208,7 +2234,8 @@ cogl_texture_rectangle (CoglHandle   handle,
      (no waste) or all of the coordinates are in the range [0,1] then
      we can use hardware tiling */
   if (tex->slice_gl_handles->len == 1
-      && (cogl_features_available (COGL_FEATURE_TEXTURE_NPOT)
+      && ((cogl_features_available (COGL_FEATURE_TEXTURE_NPOT)
+           && tex->gl_target == GL_TEXTURE_2D)
           || (tx1 >= 0 && tx1 <= CFX_ONE
               && tx2 >= 0 && tx2 <= CFX_ONE
               && ty1 >= 0 && ty1 <= CFX_ONE
@@ -2228,6 +2255,7 @@ cogl_texture_polygon (CoglHandle         handle,
   int               i, x, y, vnum;
   GLuint            gl_handle;
   CoglTexSliceSpan *y_span, *x_span;
+  gulong enable_flags = 0;
 
   /* Check if valid texture */
   if (!cogl_is_texture (handle))
@@ -2258,7 +2286,14 @@ cogl_texture_polygon (CoglHandle         handle,
   tex = _cogl_texture_pointer_from_handle (handle);
   
   /* Prepare GL state */
-  cogl_enable (COGL_ENABLE_TEXTURE_2D | COGL_ENABLE_BLEND);
+  enable_flags = COGL_ENABLE_BLEND;
+
+  if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
+    enable_flags |= COGL_ENABLE_TEXTURE_RECT;
+  else
+    enable_flags |= COGL_ENABLE_TEXTURE_2D;
+
+  cogl_enable (enable_flags);
 
   /* Temporarily change the wrapping mode on all of the slices to use
      a transparent border */
@@ -2298,6 +2333,13 @@ cogl_texture_polygon (CoglHandle         handle,
 	      ty = (CLUTTER_FIXED_TO_FLOAT (vertices[vnum].ty)
 		    - y_span->start / (GLfloat) tex->bitmap.height)
 		* tex->bitmap.height / y_span->size;
+
+              /* Scale the coordinates up for rectangle textures */
+              if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
+                {
+                  tx *= x_span->size;
+                  ty *= y_span->size;
+                }
 
 	      glTexCoord2f (tx, ty);
 
