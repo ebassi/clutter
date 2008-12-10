@@ -880,20 +880,25 @@ clutter_actor_transform_point (ClutterActor *actor,
  * Since: 0.6
  */
 void
-clutter_actor_apply_relative_transform_to_point (ClutterActor  *self,
-						 ClutterActor  *ancestor,
-						 ClutterVertex *point,
-						 ClutterVertex *vertex)
+clutter_actor_apply_relative_transform_to_point (ClutterActor        *self,
+						 ClutterActor        *ancestor,
+						 const ClutterVertex *point,
+						 ClutterVertex       *vertex)
 {
+  ClutterVertex tmp = { 0, };
   ClutterFixed  v[4];
   ClutterFixed  w = CFX_ONE;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (ancestor == NULL || CLUTTER_IS_ACTOR (ancestor));
+  g_return_if_fail (point != NULL);
+  g_return_if_fail (vertex != NULL);
+
+  tmp = *point;
 
   /* First we tranform the point using the OpenGL modelview matrix */
   clutter_actor_transform_point_relative (self, ancestor,
-					  &point->x, &point->y, &point->z,
+					  &tmp.x, &tmp.y, &tmp.z,
 					  &w);
 
   cogl_get_viewport (v);
@@ -902,9 +907,9 @@ clutter_actor_apply_relative_transform_to_point (ClutterActor  *self,
    * The w[3] parameter should always be 1.0 here, so we ignore it; otherwise
    * we would have to divide the original verts with it.
    */
-  vertex->x = CFX_QMUL ((point->x + CFX_ONE / 2), v[2]);
-  vertex->y = CFX_QMUL ((CFX_ONE / 2 - point->y), v[3]);
-  vertex->z = CFX_QMUL ((point->z + CFX_ONE / 2), v[2]);
+  vertex->x = CFX_QMUL ((tmp.x + CFX_ONE / 2), v[2]);
+  vertex->y = CFX_QMUL ((CFX_ONE / 2 - tmp.y), v[3]);
+  vertex->z = CFX_QMUL ((tmp.z + CFX_ONE / 2), v[2]);
 }
 
 /**
@@ -920,29 +925,34 @@ clutter_actor_apply_relative_transform_to_point (ClutterActor  *self,
  * Since: 0.4
  **/
 void
-clutter_actor_apply_transform_to_point (ClutterActor  *self,
-					ClutterVertex *point,
-					ClutterVertex *vertex)
+clutter_actor_apply_transform_to_point (ClutterActor        *self,
+                                        const ClutterVertex *point,
+                                        ClutterVertex       *vertex)
 {
+  ClutterVertex tmp = { 0, };
   ClutterFixed  mtx_p[16];
   ClutterFixed  v[4];
   ClutterFixed  w = CFX_ONE;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
+  g_return_if_fail (point != NULL);
+  g_return_if_fail (vertex != NULL);
+
+  tmp = *point;
 
   /* First we tranform the point using the OpenGL modelview matrix */
-  clutter_actor_transform_point (self, &point->x, &point->y, &point->z, &w);
+  clutter_actor_transform_point (self, &tmp.x, &tmp.y, &tmp.z, &w);
 
   cogl_get_projection_matrix (mtx_p);
   cogl_get_viewport (v);
 
   /* Now, transform it again with the projection matrix */
-  mtx_transform (mtx_p, &point->x, &point->y, &point->z, &w);
+  mtx_transform (mtx_p, &tmp.x, &tmp.y, &tmp.z, &w);
 
   /* Finaly translate from OpenGL coords to window coords */
-  vertex->x = MTX_GL_SCALE_X (point->x, w, v[2], v[0]);
-  vertex->y = MTX_GL_SCALE_Y (point->y, w, v[3], v[1]);
-  vertex->z = MTX_GL_SCALE_Z (point->z, w, v[2], v[0]);
+  vertex->x = MTX_GL_SCALE_X (tmp.x, w, v[2], v[0]);
+  vertex->y = MTX_GL_SCALE_Y (tmp.y, w, v[3], v[1]);
+  vertex->z = MTX_GL_SCALE_Z (tmp.z, w, v[2], v[0]);
 }
 
 /* Recursively tranform supplied vertices with the tranform for the current
