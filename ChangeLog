@@ -1,3 +1,14 @@
+2008-12-10  Neil Roberts  <neil@linux.intel.com>
+
+	Bug 1323 - ClutterBehaviorDepth conflicts with other behaviors
+
+	Merge from trunk:
+
+	* clutter/clutter-behaviour-ellipse.c (actor_apply_knot_foreach):
+	Don't set the depth if there is no x or y tilt. That way it can
+	still be used in conjunction with ClutterBehaviourDepth. Thanks to
+	Tonny Tzeng.
+
 2008-12-08  Neil Roberts  <neil@linux.intel.com>
 
 	* clutter/clutter-main.c (_clutter_do_pick): Restore the GL_DITHER
