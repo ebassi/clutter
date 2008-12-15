@@ -18,6 +18,8 @@ typedef struct SuperOH
   ClutterActor   **hand, *bgtex;
   ClutterActor    *group;
 
+  gboolean        *paint_guards;
+
 } SuperOH;
 
 static gint n_hands = NHANDS;
@@ -117,40 +119,46 @@ frame_cb (ClutterTimeline *timeline,
     }
 }
 
-static gboolean hand_pre_paint_guard = FALSE;
-
 static void
 hand_pre_paint (ClutterActor *actor,
                 gpointer      user_data)
 {
-  ClutterColor red = { 255, 0, 0, 128 };
+  SuperOH *oh = (SuperOH *) user_data;
   guint w, h;
+  int actor_num;
+  ClutterColor red = { 255, 0, 0, 128 };
 
-  g_assert (hand_pre_paint_guard == FALSE);
+  for (actor_num = 0; oh->hand[actor_num] != actor; actor_num++);
+
+  g_assert (oh->paint_guards[actor_num] == FALSE);
 
   clutter_actor_get_size (actor, &w, &h);
 
   cogl_color (&red);
   cogl_rectangle (0, 0, w / 2, h / 2);
 
-  hand_pre_paint_guard = TRUE;
+  oh->paint_guards[actor_num] = TRUE;
 }
 
 static void
 hand_post_paint (ClutterActor *actor,
                  gpointer      user_data)
 {
-  ClutterColor green = { 0, 255, 0, 128 };
+  SuperOH *oh = (SuperOH *) user_data;
   guint w, h;
+  int actor_num;
+  ClutterColor green = { 0, 255, 0, 128 };
 
-  g_assert (hand_pre_paint_guard == TRUE);
+  for (actor_num = 0; oh->hand[actor_num] != actor; actor_num++);
+
+  g_assert (oh->paint_guards[actor_num] == TRUE);
 
   clutter_actor_get_size (actor, &w, &h);
 
   cogl_color (&green);
   cogl_rectangle (w / 2, h / 2, w / 2, h / 2);
 
-  hand_pre_paint_guard = FALSE;
+  oh->paint_guards[actor_num] = FALSE;
 }
 
 int
@@ -233,12 +241,12 @@ main (int argc, char *argv[])
       /* paint something before each hand */
       g_signal_connect (oh->hand[i],
                         "paint", G_CALLBACK (hand_pre_paint),
-                        NULL);
+                        oh);
 
       /* paint something after each hand */
       g_signal_connect_after (oh->hand[i],
                               "paint", G_CALLBACK (hand_post_paint),
-                              NULL);
+                              oh);
 
       /* Place around a circle */
       w = clutter_actor_get_width (oh->hand[0]);
@@ -270,6 +278,8 @@ main (int argc, char *argv[])
 #endif
     }
 
+  oh->paint_guards = g_malloc0 (sizeof (gboolean) * n_hands);
+
   /* Add the group to the stage */
   clutter_container_add_actor (CLUTTER_CONTAINER (stage),
                                CLUTTER_ACTOR (oh->group));
@@ -291,6 +301,7 @@ main (int argc, char *argv[])
   clutter_main ();
 
   g_free (oh->hand);
+  g_free (oh->paint_guards);
   g_free (oh);
 
   return 0;
