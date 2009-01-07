@@ -55,12 +55,56 @@ struct _PangoClutterRenderer
   PangoClutterGlyphCache *mipmapped_glyph_cache;
 
   gboolean use_mipmapping;
+
+  /* Array of rectangles to draw from the current texture */
+  GArray *glyph_rectangles;
+  CoglHandle glyph_texture;
 };
 
 struct _PangoClutterRendererClass
 {
   PangoRendererClass class_instance;
 };
+
+static void
+pango_clutter_renderer_glyphs_end (PangoClutterRenderer *priv)
+{
+  if (priv->glyph_rectangles->len > 0)
+    {
+      ClutterFixed *rectangles = (ClutterFixed *) priv->glyph_rectangles->data;
+      cogl_texture_multiple_rectangles (priv->glyph_texture, rectangles,
+                                        priv->glyph_rectangles->len / 8);
+      g_array_set_size (priv->glyph_rectangles, 0);
+    }
+}
+
+static void
+pango_clutter_renderer_draw_glyph (PangoClutterRenderer        *priv,
+                                   PangoClutterGlyphCacheValue *cache_value,
+                                   ClutterFixed                 x1,
+                                   ClutterFixed                 y1)
+{
+  ClutterFixed x2, y2;
+  ClutterFixed *p;
+
+  if (priv->glyph_rectangles->len > 0
+      && priv->glyph_texture != cache_value->texture)
+    pango_clutter_renderer_glyphs_end (priv);
+
+  priv->glyph_texture = cache_value->texture;
+
+  x2 = x1 + CLUTTER_INT_TO_FIXED (cache_value->draw_width);
+  y2 = y1 + CLUTTER_INT_TO_FIXED (cache_value->draw_height);
+
+  g_array_set_size (priv->glyph_rectangles, priv->glyph_rectangles->len + 8);
+  p = &g_array_index (priv->glyph_rectangles, ClutterFixed,
+                      priv->glyph_rectangles->len - 8);
+
+  *(p++) = x1;               *(p++) = y1;
+  *(p++) = x2;               *(p++) = y2;
+  *(p++) = cache_value->tx1; *(p++) = cache_value->ty1;
+  *(p++) = cache_value->tx2; *(p++) = cache_value->ty2;
+}
 
 #define CLUTTER_PANGO_UNIT_TO_FIXED(x) ((x) << (CFX_Q - 10))
 
@@ -96,6 +140,7 @@ pango_clutter_renderer_init (PangoClutterRenderer *priv)
   priv->glyph_cache = pango_clutter_glyph_cache_new (FALSE);
   priv->mipmapped_glyph_cache = pango_clutter_glyph_cache_new (TRUE);
   priv->use_mipmapping = FALSE;
+  priv->glyph_rectangles = g_array_new (FALSE, FALSE, sizeof (ClutterFixed));
 }
 
 static void
@@ -120,6 +165,7 @@ pango_clutter_renderer_finalize (GObject *object)
 
   pango_clutter_glyph_cache_free (priv->mipmapped_glyph_cache);
   pango_clutter_glyph_cache_free (priv->glyph_cache);
+  g_array_free (priv->glyph_rectangles, TRUE);
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -423,6 +469,7 @@ pango_clutter_renderer_draw_glyphs (PangoRenderer    *renderer,
 				    int               xi,
 				    int               yi)
 {
+  PangoClutterRenderer *priv = (PangoClutterRenderer *) renderer;
   PangoClutterGlyphCacheValue *cache_value;
   int i;
 
@@ -443,12 +490,18 @@ pango_clutter_renderer_draw_glyphs (PangoRenderer    *renderer,
 	{
 	  PangoFontMetrics *metrics;
 
+          pango_clutter_renderer_glyphs_end (priv);
+
 	  if (font == NULL
 	      || (metrics = pango_font_get_metrics (font, NULL)) == NULL)
-	    pango_clutter_renderer_draw_box (CLUTTER_FIXED_TO_INT (x),
-					     CLUTTER_FIXED_TO_INT (y),
-					     PANGO_UNKNOWN_GLYPH_WIDTH,
-					     PANGO_UNKNOWN_GLYPH_HEIGHT);
+            {
+              pango_clutter_renderer_glyphs_end (priv);
+
+              pango_clutter_renderer_draw_box (CLUTTER_FIXED_TO_INT (x),
+                                               CLUTTER_FIXED_TO_INT (y),
+                                               PANGO_UNKNOWN_GLYPH_WIDTH,
+                                               PANGO_UNKNOWN_GLYPH_HEIGHT);
+            }
 	  else
 	    {
 	      pango_clutter_renderer_draw_box (CLUTTER_FIXED_TO_INT (x),
@@ -478,17 +531,12 @@ pango_clutter_renderer_draw_glyphs (PangoRenderer    *renderer,
 	      x += CLUTTER_INT_TO_FIXED (cache_value->draw_x);
 	      y += CLUTTER_INT_TO_FIXED (cache_value->draw_y);
 
-	      /* Render the glyph from the texture */
-	      cogl_texture_rectangle (cache_value->texture, x, y,
-				      x + CLUTTER_INT_TO_FIXED (cache_value
-								->draw_width),
-				      y + CLUTTER_INT_TO_FIXED (cache_value
-								->draw_height),
-				      cache_value->tx1, cache_value->ty1,
-				      cache_value->tx2, cache_value->ty2);
+              pango_clutter_renderer_draw_glyph (priv, cache_value, x, y);
 	    }
 	}
 
       xi += gi->geometry.width;
     }
+
+  pango_clutter_renderer_glyphs_end (priv);
 }

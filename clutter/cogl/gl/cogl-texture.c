@@ -1918,6 +1918,95 @@ cogl_texture_get_data (CoglHandle       handle,
 }
 
 static void
+_cogl_texture_flush_vertices (void)
+{
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+
+  if (ctx->texture_vertices->len > 0)
+    {
+      int needed_indices;
+      CoglTextureGLVertex *p
+        = (CoglTextureGLVertex *) ctx->texture_vertices->data;
+
+      /* The indices are always the same sequence regardless of the
+         vertices so we only need to change it if there are more
+         vertices than ever before */
+      needed_indices = ctx->texture_vertices->len / 4 * 6;
+      if (needed_indices > ctx->texture_indices->len)
+        {
+          int old_len = ctx->texture_indices->len;
+          int vert_num = old_len / 6 * 4;
+          int i;
+          GLushort *q;
+
+          /* Add two triangles for each quad to the list of
+             indices. That makes six new indices but two of the
+             vertices in the triangles are shared. */
+          g_array_set_size (ctx->texture_indices, needed_indices);
+          q = &g_array_index (ctx->texture_indices, GLushort, old_len);
+
+          for (i = old_len;
+               i < ctx->texture_indices->len;
+               i += 6, vert_num += 4)
+            {
+              *(q++) = vert_num + 0;
+              *(q++) = vert_num + 1;
+              *(q++) = vert_num + 3;
+
+              *(q++) = vert_num + 1;
+              *(q++) = vert_num + 2;
+              *(q++) = vert_num + 3;
+            }
+        }
+
+      GE( glVertexPointer (2, GL_FLOAT,
+                           sizeof (CoglTextureGLVertex), p->v ) );
+      GE( glTexCoordPointer (2, GL_FLOAT,
+                             sizeof (CoglTextureGLVertex), p->t ) );
+
+      GE( glBindTexture (ctx->texture_target, ctx->texture_current) );
+      GE( ctx->pf_glDrawRangeElements (GL_TRIANGLES,
+                                       0, ctx->texture_vertices->len - 1,
+                                       needed_indices,
+                                       GL_UNSIGNED_SHORT,
+                                       ctx->texture_indices->data) );
+
+      g_array_set_size (ctx->texture_vertices, 0);
+    }
+}
+
+static void
+_cogl_texture_add_quad_vertices (GLfloat x1, GLfloat y1,
+                                 GLfloat x2, GLfloat y2,
+                                 GLfloat tx1, GLfloat ty1,
+                                 GLfloat tx2, GLfloat ty2)
+{
+  CoglTextureGLVertex *p;
+  GLushort first_vert;
+
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+
+  /* Add the four vertices of the quad to the list of queued
+     vertices */
+  first_vert = ctx->texture_vertices->len;
+  g_array_set_size (ctx->texture_vertices, first_vert + 4);
+  p = &g_array_index (ctx->texture_vertices, CoglTextureGLVertex, first_vert);
+
+  p->v[0] = x1;  p->v[1] = y1;
+  p->t[0] = tx1; p->t[1] = ty1;
+  p++;
+  p->v[0] = x1;  p->v[1] = y2;
+  p->t[0] = tx1; p->t[1] = ty2;
+  p++;
+  p->v[0] = x2;  p->v[1] = y2;
+  p->t[0] = tx2; p->t[1] = ty2;
+  p++;
+  p->v[0] = x2;  p->v[1] = y1;
+  p->t[0] = tx2; p->t[1] = ty1;
+  p++;
+}
+
+static void
 _cogl_texture_quad_sw (CoglTexture *tex,
 		       ClutterFixed x1,
 		       ClutterFixed y1,
@@ -1928,41 +2017,30 @@ _cogl_texture_quad_sw (CoglTexture *tex,
 		       ClutterFixed tx2,
 		       ClutterFixed ty2)
 {
-  CoglSpanIter       iter_x    ,  iter_y;
-  ClutterFixed       tw        ,  th;
-  ClutterFixed       tqx       ,  tqy;
-  ClutterFixed       first_tx  ,  first_ty;
-  ClutterFixed       first_qx  ,  first_qy;
-  ClutterFixed       slice_tx1 ,  slice_ty1;
-  ClutterFixed       slice_tx2 ,  slice_ty2;
-  ClutterFixed       slice_qx1 ,  slice_qy1;
-  ClutterFixed       slice_qx2 ,  slice_qy2;
-  GLuint             gl_handle;
-  gulong enable_flags = 0;
-  
+  CoglSpanIter    iter_x    ,  iter_y;
+  ClutterFixed    tw        ,  th;
+  ClutterFixed    tqx       ,  tqy;
+  ClutterFixed    first_tx  ,  first_ty;
+  ClutterFixed    first_qx  ,  first_qy;
+  ClutterFixed    slice_tx1 ,  slice_ty1;
+  ClutterFixed    slice_tx2 ,  slice_ty2;
+  ClutterFixed    slice_qx1 ,  slice_qy1;
+  ClutterFixed    slice_qx2 ,  slice_qy2;
+  GLuint          gl_handle;
+
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
   
 #if COGL_DEBUG
   printf("=== Drawing Tex Quad (Software Tiling Mode) ===\n");
 #endif
 
-  /* Prepare GL state */
-  if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
-    enable_flags |= COGL_ENABLE_TEXTURE_RECT;
-  else
-    enable_flags |= COGL_ENABLE_TEXTURE_2D;
-
-  if (ctx->color_alpha < 255
-      || tex->bitmap.format & COGL_A_BIT)
-    {
-      enable_flags |= COGL_ENABLE_BLEND;
-    }
-  
-  cogl_enable (enable_flags);
-
   /* We can't use hardware repeat so we need to set clamp to edge
      otherwise it might pull in edge pixels from the other side */
+  if (ctx->texture_vertices->len > 0
+      && ctx->texture_wrap_mode != GL_CLAMP_TO_EDGE)
+    _cogl_texture_flush_vertices ();
   _cogl_texture_set_wrap_mode_parameter (tex, GL_CLAMP_TO_EDGE);
+  ctx->texture_wrap_mode = GL_CLAMP_TO_EDGE;
 
   /* If the texture coordinates are backwards then swap both the
      geometry and texture coordinates so that the texture will be
@@ -1986,7 +2064,7 @@ _cogl_texture_quad_sw (CoglTexture *tex,
       ty1 = ty2;
       ty2 = temp;
     }
-  
+
   /* Scale ratio from texture to quad widths */
   tw = CLUTTER_INT_TO_FIXED (tex->bitmap.width);
   th = CLUTTER_INT_TO_FIXED (tex->bitmap.height);
@@ -2083,29 +2161,23 @@ _cogl_texture_quad_sw (CoglTexture *tex,
 	  gl_handle = g_array_index (tex->slice_gl_handles, GLuint,
 				     iter_y.index * iter_x.array->len +
 				     iter_x.index);
-	  
-	  GE( glBindTexture (tex->gl_target, gl_handle) );
-	  
-#define CFX_F CLUTTER_FIXED_TO_FLOAT
-	  
-	  /* Draw textured quad */
-	  glBegin (GL_QUADS);
-	  
-	  glTexCoord2f (CFX_F(slice_tx1), CFX_F(slice_ty1));
-	  glVertex2f   (CFX_F(slice_qx1), CFX_F(slice_qy1));
-	  
-	  glTexCoord2f (CFX_F(slice_tx2), CFX_F(slice_ty1));
-	  glVertex2f   (CFX_F(slice_qx2), CFX_F(slice_qy1));
-	  
-	  glTexCoord2f (CFX_F(slice_tx2), CFX_F(slice_ty2));
-	  glVertex2f   (CFX_F(slice_qx2), CFX_F(slice_qy2));
-	  
-	  glTexCoord2f (CFX_F(slice_tx1), CFX_F(slice_ty2));
-	  glVertex2f   (CFX_F(slice_qx1), CFX_F(slice_qy2));
-	  
-	  GE( glEnd () );
-	  
-#undef CFX_F
+
+          /* If we're using a different texture from the one already queued
+             then flush the vertices */
+          if (ctx->texture_vertices->len > 0
+              && gl_handle != ctx->texture_current)
+            _cogl_texture_flush_vertices ();
+          ctx->texture_target = tex->gl_target;
+          ctx->texture_current = gl_handle;
+
+          _cogl_texture_add_quad_vertices (CLUTTER_FIXED_TO_FLOAT (slice_qx1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_qy1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_qx2),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_qy2),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_tx1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_ty1),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_tx2),
+                                           CLUTTER_FIXED_TO_FLOAT (slice_ty2));
 	}
     }
 }
@@ -2121,30 +2193,16 @@ _cogl_texture_quad_hw (CoglTexture *tex,
 		       ClutterFixed tx2,
 		       ClutterFixed ty2)
 {
+  GLuint            gl_handle;
   CoglTexSliceSpan *x_span;
   CoglTexSliceSpan *y_span;
-  GLuint            gl_handle;
-  gulong enable_flags = 0;
-  
+  GLenum            wrap_mode;
+
 #if COGL_DEBUG
   printf("=== Drawing Tex Quad (Hardware Tiling Mode) ===\n");
 #endif
   
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-  
-  /* Prepare GL state */
-  if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
-    enable_flags |= COGL_ENABLE_TEXTURE_RECT;
-  else
-    enable_flags |= COGL_ENABLE_TEXTURE_2D;
-
-  if (ctx->color_alpha < 255
-      || tex->bitmap.format & COGL_A_BIT)
-    {
-      enable_flags |= COGL_ENABLE_BLEND;
-    }
-  
-  cogl_enable (enable_flags);
 
   /* If the texture coords are all in the range [0,1] then we want to
      clamp the coords to the edge otherwise it can pull in edge pixels
@@ -2153,14 +2211,26 @@ _cogl_texture_quad_hw (CoglTexture *tex,
       && tx2 >= 0 && tx2 <= CFX_ONE
       && ty1 >= 0 && ty1 <= CFX_ONE
       && ty2 >= 0 && ty2 <= CFX_ONE)
-    _cogl_texture_set_wrap_mode_parameter (tex, GL_CLAMP_TO_EDGE);
+    wrap_mode = GL_CLAMP_TO_EDGE;
   else
-    _cogl_texture_set_wrap_mode_parameter (tex, GL_REPEAT);
+    wrap_mode = GL_REPEAT;
 
   /* Pick and bind opengl texture object */
   gl_handle = g_array_index (tex->slice_gl_handles, GLuint, 0);
-  GE( glBindTexture (tex->gl_target, gl_handle) );
-  
+
+  /* If we're using a different texture from the one already queued
+     then flush the vertices */
+  if (ctx->texture_vertices->len > 0
+      && (gl_handle != ctx->texture_current
+          || ctx->texture_wrap_mode != wrap_mode))
+    _cogl_texture_flush_vertices ();
+  ctx->texture_target = tex->gl_target;
+  ctx->texture_current = gl_handle;
+  ctx->texture_wrap_mode = wrap_mode;
+
+  _cogl_texture_set_wrap_mode_parameter (tex, wrap_mode);
+
+  /* Don't include the waste in the texture coordinates */
   x_span = &g_array_index (tex->slice_x_spans, CoglTexSliceSpan, 0);
   y_span = &g_array_index (tex->slice_y_spans, CoglTexSliceSpan, 0);
 
@@ -2179,26 +2249,79 @@ _cogl_texture_quad_hw (CoglTexture *tex,
       ty2 *= y_span->size;
     }
 
-#define CFX_F(x) CLUTTER_FIXED_TO_FLOAT(x)
+  _cogl_texture_add_quad_vertices (CLUTTER_FIXED_TO_FLOAT (x1),
+                                   CLUTTER_FIXED_TO_FLOAT (y1),
+                                   CLUTTER_FIXED_TO_FLOAT (x2),
+                                   CLUTTER_FIXED_TO_FLOAT (y2),
+                                   CLUTTER_FIXED_TO_FLOAT (tx1),
+                                   CLUTTER_FIXED_TO_FLOAT (ty1),
+                                   CLUTTER_FIXED_TO_FLOAT (tx2),
+                                   CLUTTER_FIXED_TO_FLOAT (ty2));
+}
 
-  /* Draw textured quad */
-  glBegin (GL_QUADS);
+void
+cogl_texture_multiple_rectangles (CoglHandle          handle,
+                                  const ClutterFixed *verts,
+                                  guint               n_rects)
+{
+  CoglTexture    *tex;
+  gulong          enable_flags = (COGL_ENABLE_VERTEX_ARRAY
+                                  | COGL_ENABLE_TEXCOORD_ARRAY);
+
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+
+  /* Check if valid texture */
+  if (!cogl_is_texture (handle))
+    return;
   
-  glTexCoord2f (CFX_F(tx1), CFX_F(ty1));
-  glVertex2f   (CFX_F(x1),  CFX_F(y1));
+  tex = _cogl_texture_pointer_from_handle (handle);
   
-  glTexCoord2f (CFX_F(tx2), CFX_F(ty1));
-  glVertex2f   (CFX_F(x2),  CFX_F(y1));
+  /* Make sure we got stuff to draw */
+  if (tex->slice_gl_handles == NULL)
+    return;
   
-  glTexCoord2f (CFX_F(tx2), CFX_F(ty2));
-  glVertex2f   (CFX_F(x2),  CFX_F(y2));
-  
-  glTexCoord2f (CFX_F(tx1), CFX_F(ty2));
-  glVertex2f   (CFX_F(x1),  CFX_F(y2));
-  
-  GE( glEnd () );
-  
-#undef CFX_F
+  if (tex->slice_gl_handles->len == 0)
+    return;
+
+  /* Prepare GL state */
+  if (tex->gl_target == CGL_TEXTURE_RECTANGLE_ARB)
+    enable_flags |= COGL_ENABLE_TEXTURE_RECT;
+  else
+    enable_flags |= COGL_ENABLE_TEXTURE_2D;
+
+  if (ctx->color_alpha < 255
+      || tex->bitmap.format & COGL_A_BIT)
+    enable_flags |= COGL_ENABLE_BLEND;
+
+  cogl_enable (enable_flags);
+
+  g_array_set_size (ctx->texture_vertices, 0);
+
+  while (n_rects-- > 0)
+    {
+      if (verts[4] != verts[6] && verts[5] != verts[7])
+        {
+          /* If there is only one GL texture and either the texture is
+             NPOT (no waste) or all of the coordinates are in the
+             range [0,1] then we can use hardware tiling */
+          if (tex->slice_gl_handles->len == 1
+              && ((cogl_features_available (COGL_FEATURE_TEXTURE_NPOT)
+                   && tex->gl_target == GL_TEXTURE_2D)
+                  || (verts[4] >= 0 && verts[4] <= CFX_ONE
+                      && verts[6] >= 0 && verts[6] <= CFX_ONE
+                      && verts[5] >= 0 && verts[5] <= CFX_ONE
+                      && verts[7] >= 0 && verts[7] <= CFX_ONE)))
+            _cogl_texture_quad_hw (tex, verts[0],verts[1], verts[2],verts[3],
+                                   verts[4],verts[5], verts[6],verts[7]);
+          else
+            _cogl_texture_quad_sw (tex, verts[0],verts[1], verts[2],verts[3],
+                                   verts[4],verts[5], verts[6],verts[7]);
+        }
+
+      verts += 8;
+    }
+
+  _cogl_texture_flush_vertices ();
 }
 
 void
@@ -2212,37 +2335,18 @@ cogl_texture_rectangle (CoglHandle   handle,
 			ClutterFixed tx2,
 			ClutterFixed ty2)
 {
-  CoglTexture       *tex;
-  
-  /* Check if valid texture */
-  if (!cogl_is_texture (handle))
-    return;
-  
-  tex = _cogl_texture_pointer_from_handle (handle);
-  
-  /* Make sure we got stuff to draw */
-  if (tex->slice_gl_handles == NULL)
-    return;
-  
-  if (tex->slice_gl_handles->len == 0)
-    return;
-  
-  if (tx1 == tx2 || ty1 == ty2)
-    return;
-  
-  /* If there is only one GL texture and either the texture is NPOT
-     (no waste) or all of the coordinates are in the range [0,1] then
-     we can use hardware tiling */
-  if (tex->slice_gl_handles->len == 1
-      && ((cogl_features_available (COGL_FEATURE_TEXTURE_NPOT)
-           && tex->gl_target == GL_TEXTURE_2D)
-          || (tx1 >= 0 && tx1 <= CFX_ONE
-              && tx2 >= 0 && tx2 <= CFX_ONE
-              && ty1 >= 0 && ty1 <= CFX_ONE
-              && ty2 >= 0 && ty2 <= CFX_ONE)))
-    _cogl_texture_quad_hw (tex, x1,y1, x2,y2, tx1,ty1, tx2,ty2);
-  else
-    _cogl_texture_quad_sw (tex, x1,y1, x2,y2, tx1,ty1, tx2,ty2);
+  ClutterFixed verts[8];
+
+  verts[0] = x1;
+  verts[1] = y1;
+  verts[2] = x2;
+  verts[3] = y2;
+  verts[4] = tx1;
+  verts[5] = ty1;
+  verts[6] = tx2;
+  verts[7] = ty2;
+
+  cogl_texture_multiple_rectangles (handle, verts, 1);
 }
 
 void

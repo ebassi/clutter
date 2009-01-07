@@ -30,6 +30,13 @@
 
 typedef struct
 {
+  GLfloat v[3];
+  GLfloat t[2];
+  GLfloat c[4];
+} CoglTextureGLVertex;
+
+typedef struct
+{
   /* Features cache */
   CoglFeatureFlags  feature_flags;
   gboolean          features_cached;
@@ -54,8 +61,16 @@ typedef struct
   GLfloat           inverse_projection[16];
   
   /* Textures */
-  GArray           *texture_handles;
-  
+  GArray	   *texture_handles;
+  GArray           *texture_vertices;
+  GArray           *texture_indices;
+  /* The gl texture number that the above vertices apply to. This to
+     detect when a different slice is encountered so that the vertices
+     can be flushed */
+  GLuint            texture_current;
+  GLenum            texture_target;
+  GLenum            texture_wrap_mode;
+
   /* Framebuffer objects */
   GArray           *fbo_handles;
   CoglBufferTarget  draw_buffer;
@@ -93,6 +108,7 @@ typedef struct
   COGL_PFNGLGETOBJECTPARAMETERIVARBPROC            pf_glGetObjectParameterivARB;
   COGL_PFNGLUNIFORM1FARBPROC                       pf_glUniform1fARB;
   
+  COGL_PFNGLDRAWRANGEELEMENTSPROC                  pf_glDrawRangeElements;
 } CoglContext;
 
 CoglContext *

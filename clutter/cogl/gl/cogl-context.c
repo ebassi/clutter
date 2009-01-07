@@ -57,7 +57,12 @@ cogl_create_context ()
   _context->path_nodes_size = 0;
   
   _context->texture_handles = NULL;
-  
+
+  _context->texture_vertices = g_array_new (FALSE, FALSE,
+                                            sizeof (CoglTextureGLVertex));
+  _context->texture_indices = g_array_new (FALSE, FALSE,
+                                           sizeof (GLushort));
+
   _context->fbo_handles = NULL;
   _context->draw_buffer = COGL_WINDOW_BUFFER;
   
@@ -93,6 +98,8 @@ cogl_create_context ()
   _context->pf_glGetObjectParameterivARB = NULL;
   _context->pf_glUniform1fARB = NULL;
   
+  _context->pf_glDrawRangeElements = NULL;
+
   /* Init OpenGL state */
   GE( glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE) );
   GE( glColorMask (TRUE, TRUE, TRUE, FALSE) );
@@ -116,7 +123,11 @@ cogl_destroy_context ()
     g_array_free (_context->shader_handles, TRUE);
   if (_context->program_handles)
     g_array_free (_context->program_handles, TRUE);
-  
+  if (_context->texture_vertices)
+    g_array_free (_context->texture_vertices, TRUE);
+  if (_context->texture_indices)
+    g_array_free (_context->texture_indices, TRUE);
+
   g_free (_context);
 }
 
