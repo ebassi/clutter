@@ -425,6 +425,8 @@ event_translate (ClutterBackend *backend,
   switch (xevent->type)
     {
     case ConfigureNotify:
+      CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper,
+                                 CLUTTER_ACTOR_SYNC_MATRICES);
       if (!stage_x11->is_foreign_xwin)
         {
 	  /* Set a flag so that the stage will know the actor is being
@@ -432,12 +434,6 @@ event_translate (ClutterBackend *backend,
 	     opposed to a request from the application. This prevents
 	     it from trying to resize the window again */
 	  stage_x11->handling_configure = TRUE;
-
-          /* the resize process is complete, so we can remove the
-           * in-resize flag and allow the viewport to be resized
-           */
-          CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper,
-                                     CLUTTER_ACTOR_SYNC_MATRICES);
 
 	  clutter_actor_set_size (CLUTTER_ACTOR (stage),
 				  xevent->xconfigure.width,
@@ -497,9 +493,6 @@ event_translate (ClutterBackend *backend,
                 }
               else
                 res = FALSE;
-
-              CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper,
-                                         CLUTTER_ACTOR_SYNC_MATRICES);
 
               XFree (data);
             }

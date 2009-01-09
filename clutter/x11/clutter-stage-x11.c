@@ -300,6 +300,9 @@ clutter_stage_x11_allocate (ClutterActor          *self,
           clutter_actor_unrealize (self);
           clutter_actor_realize (self);
         }
+
+      CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper,
+                                 CLUTTER_ACTOR_SYNC_MATRICES);
     }
 
   /* chain up to fill in actor->priv->allocation */
