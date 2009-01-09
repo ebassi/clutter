@@ -290,22 +290,7 @@ clutter_stage_x11_allocate (ClutterActor          *self,
                          stage_x11->xwin,
                          stage_x11->xwin_width,
                          stage_x11->xwin_height);
-
-          /* resizing is an asynchronous process; to avoid races
-           * with the window manager, we flag the wrapper as being
-           * "in resize", so that the SYNC_MATRICES flag will not
-           * cause a call to cogl_get_viewport().
-           *
-           * the flag is unset inside clutter-event-x11.c, after
-           * we receive a ConfigureNotify event. XXX - need to
-           * check what happens when running without a window manager
-           */
-          CLUTTER_SET_PRIVATE_FLAGS (CLUTTER_ACTOR (stage_x11->wrapper),
-                                     CLUTTER_STAGE_IN_RESIZE);
         }
-
-      CLUTTER_SET_PRIVATE_FLAGS (CLUTTER_ACTOR (stage_x11->wrapper),
-                                 CLUTTER_ACTOR_SYNC_MATRICES);
 
       clutter_stage_x11_fix_window_size (stage_x11);
 
@@ -494,7 +479,7 @@ clutter_stage_x11_set_fullscreen (ClutterStageWindow *stage_window,
         }
     }
 
-  CLUTTER_SET_PRIVATE_FLAGS (stage, CLUTTER_ACTOR_SYNC_MATRICES);
+  CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper, CLUTTER_ACTOR_SYNC_MATRICES);
 }
 
 static void

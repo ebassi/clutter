@@ -433,17 +433,17 @@ event_translate (ClutterBackend *backend,
 	     it from trying to resize the window again */
 	  stage_x11->handling_configure = TRUE;
 
+          /* the resize process is complete, so we can remove the
+           * in-resize flag and allow the viewport to be resized
+           */
+          CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper,
+                                     CLUTTER_ACTOR_SYNC_MATRICES);
+
 	  clutter_actor_set_size (CLUTTER_ACTOR (stage),
 				  xevent->xconfigure.width,
 				  xevent->xconfigure.height);
 
 	  stage_x11->handling_configure = FALSE;
-
-          /* the resize process is complete, so we can remove the
-           * in-resize flag and allow the viewport to be resized
-           */
-          CLUTTER_UNSET_PRIVATE_FLAGS (CLUTTER_ACTOR (stage_x11->wrapper),
-                                       CLUTTER_STAGE_IN_RESIZE);
         }
       res = FALSE;
       break;
@@ -497,6 +497,9 @@ event_translate (ClutterBackend *backend,
                 }
               else
                 res = FALSE;
+
+              CLUTTER_SET_PRIVATE_FLAGS (stage_x11->wrapper,
+                                         CLUTTER_ACTOR_SYNC_MATRICES);
 
               XFree (data);
             }
