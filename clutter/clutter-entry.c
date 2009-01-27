@@ -904,7 +904,7 @@ clutter_entry_init (ClutterEntry *self)
   priv->use_underline = FALSE;
   priv->use_markup    = FALSE;
   priv->layout        = NULL;
-  priv->text          = NULL;
+  priv->text          = g_strdup ("");
   priv->attrs         = NULL;
   priv->position      = -1;
   priv->priv_char     = '*';
