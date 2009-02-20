@@ -1,3 +1,28 @@
+Clutter 0.8.8 (20/02/2009)
+===============================================================================
+
+ * List of changes between 0.8.6 and 0.8.8
+
+Emmanuele Bassi (5):
+      Pots-release bump to 0.8.7
+      Bug 1365 - ClutterEntry doesn't get the cursor when it should
+      [behaviour-path] Bail out if we don't have knots
+      [behaviour] Do not notify empty behaviours
+      [backport] Update the viewport when updating the GL context
+
+Neil Roberts (2):
+      [backport] Remove backwards timelines check in get_progress
+      [backport] Set the SYNC_MATRICES flag when a stage is first realized
+
+Owen W. Taylor (2):
+      Fix properties that have X11 types to be 'long'
+      Change default tile-waste from 64 to 63
+
+Tomas Frydrych (2):
+      Fixed handling of enter and leave events in clutter_x11_handle_event()
+      Fix clutter_x11_texture_pixmap_get/set_property() following change
+        of PROP_WINDOW type.
+
 Clutter 0.8.6 (14/01/2009)
 ===============================================================================
 
