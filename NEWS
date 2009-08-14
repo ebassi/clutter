@@ -1,3 +1,29 @@
+Clutter 1.0.2 (14/08/2009)
+===============================================================================
+
+  * List of changes since 1.0.0
+
+    o Documentation fixes
+
+    o Build fixes
+
+    o Update the MingW script for building Clutter on Windows
+
+    o Update the build instructions for OS X
+
+    o On X11, make sure to destroy the stage Window when switching to
+      a foreign one
+
+    o Fix a bug where clutter_actor_apply_relative_transform() was no
+      using the right vertex to perform the transformation
+
+Many thanks to:
+
+  Damien Lespiau
+  Colin Walters
+  Joshua Lock
+  Xu Li
+
 Clutter 1.0.0 (28/07/2009)
 ===============================================================================
 
