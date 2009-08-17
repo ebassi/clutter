@@ -262,7 +262,7 @@ Clutter-@CLUTTER_API_VERSION@.gir: $(INTROSPECTION_SCANNER) libclutter-@CLUTTER_
 		--include=PangoCairo-1.0 \
 		--include=Cogl-@CLUTTER_API_VERSION@ \
 	        --include=ClutterJson-@CLUTTER_API_VERSION@ \
-		--library=clutter-@CLUTTER_FLAVOUR@-@CLUTTER_API_VERSION@ \
+		--library=libclutter-@CLUTTER_FLAVOUR@-@CLUTTER_API_VERSION@.la \
 		--libtool="$(top_builddir)/libtool" \
 	        --pkg gobject-2.0 \
 	        --pkg pango \
@@ -284,7 +284,7 @@ Clutter-@CLUTTER_API_VERSION@.typelib: ClutterJson-@CLUTTER_API_VERSION@.gir Cog
 # Clutter.gir to Cogl.gir
 Cogl-@CLUTTER_API_VERSION@.gir: Clutter-@CLUTTER_API_VERSION@.gir cogl/Cogl-@CLUTTER_API_VERSION@.gir
 	shlib=`sed -n 's/.*shared-library="\([^"]*\)".*/\1/p' < Clutter-@CLUTTER_API_VERSION@.gir` ; \
-	sed "s/shared-library=\"clutter-cogl\"/shared-library=\"$$shlib\"/"< cogl/Cogl-@CLUTTER_API_VERSION@.gir > $@
+	sed "s/shared-library=\"[^\"]*\"/shared-library=\"$$shlib\"/"< cogl/Cogl-@CLUTTER_API_VERSION@.gir > $@
 
 BUILT_GIRSOURCES += Cogl-@CLUTTER_API_VERSION@.gir
 
@@ -293,7 +293,7 @@ if LOCAL_JSON_GLIB
 # for Cogl above
 ClutterJson-@CLUTTER_API_VERSION@.gir: Clutter-@CLUTTER_API_VERSION@.gir json/ClutterJson-@CLUTTER_API_VERSION@.gir
 	shlib=`sed -n 's/.*shared-library="\([^"]*\)".*/\1/p' < Clutter-@CLUTTER_API_VERSION@.gir` ; \
-	sed "s/shared-library=\"clutter-json\"/shared-library=\"$$shlib\"/"< json/ClutterJson-@CLUTTER_API_VERSION@.gir > $@
+	sed "s/shared-library=\"[^\"]*\"/shared-library=\"$$shlib\"/"< json/ClutterJson-@CLUTTER_API_VERSION@.gir > $@
 
 BUILT_GIRSOURCES += ClutterJson-@CLUTTER_API_VERSION@.gir
 endif
@@ -308,7 +308,10 @@ typelibsdir = $(libdir)/girepository-1.0/
 typelibs_DATA = $(BUILT_GIRSOURCES:.gir=.typelib)
 
 %.typelib: %.gir $(INTROSPECTION_COMPILER)
-	$(QUIET_GEN)$(DEBUG) $(INTROSPECTION_COMPILER) --includedir=$(srcdir) --includedir=. $(INTROSPECTION_COMPILER_OPTS) $< -o $(@F)
+	$(QUIET_GEN)$(DEBUG) $(INTROSPECTION_COMPILER) \
+		--includedir=$(srcdir) \
+		--includedir=. \
+		$(INTROSPECTION_COMPILER_OPTS) $< -o $(@F)
 
 CLEANFILES += $(BUILT_GIRSOURCES) $(typelibs_DATA)
 endif
