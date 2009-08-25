@@ -1,3 +1,28 @@
+Clutter 1.0.4 (25/08/2009)
+===============================================================================
+
+  * List of changes since 1.0.2
+
+    o Depend on GObject-Introspection 0.6.4, to fix the generation of
+      introspection data from uninstalled libraries
+
+    o Fix a crash when closing multiple stages
+
+    o Help gtk-doc pick up ClutterInterval as an object
+
+    o Do not premultiply the color twice inside the CoglPango renderer
+
+    o Fix keyboard navigation of works inside ClutterText
+
+    o Allow key events to bubble up to its parent container if the
+      event contains the control modifier is detected
+
+Many thanks to:
+
+  Jonas Bonn
+  Jussi Kukkonen
+  Owen W. Taylor
+
 Clutter 1.0.2 (14/08/2009)
 ===============================================================================
 
