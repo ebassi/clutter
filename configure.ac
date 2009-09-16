@@ -1,6 +1,15 @@
 # clutter package version number, (as distinct from shared library version)
 # An odd micro number indicates in-progress development, (eg. from CVS)
 # An even micro number indicates a released version.
+#
+# Making a point release:
+# - increase clutter_micro_version to the next even number
+# - increase clutter_interface_age to the next even number
+#   UNLESS there was an API addition/deprecation, in which case
+#   - set clutter_interface_age to 0
+# After the release:
+# - increase clutter_micro_version to the next odd number
+# - increase clutter_interface_version to the next odd number
 m4_define([clutter_major_version], [1])
 m4_define([clutter_minor_version], [0])
 m4_define([clutter_micro_version], [5])
@@ -9,7 +18,7 @@ m4_define([clutter_version], [clutter_major_version.clutter_minor_version.clutte
 
 m4_define([clutter_api_version], [1.0])
 
-# increase the interface age by 2 for each release; if the API changes,
+# increase the interface age by 1 for each release; if the API changes,
 # set to 0. interface_age and binary_age are used to create the soname
 # of the shared object:
 #
@@ -25,7 +34,7 @@ m4_define([clutter_api_version], [1.0])
 #   clutter 1.2.6 -> 100 * 2 + 6 = 206, interface age = 0 -> 206
 #   ...
 #
-m4_define([clutter_interface_age], [4])
+m4_define([clutter_interface_age], [5])
 m4_define([clutter_binary_age], [m4_eval(100 * clutter_minor_version + clutter_micro_version)])
 
 AC_PREREQ([2.59])
@@ -52,7 +61,7 @@ AC_SUBST(CLUTTER_VERSION)
 AC_SUBST(CLUTTER_API_VERSION)
 AC_SUBST(CLUTTER_MAJORMINOR)
 
-m4_define([lt_current],  [m4_eval(clutter_binary_age - clutter_interface_age)])
+m4_define([lt_current],  [m4_eval(100 * clutter_minor_version + clutter_micro_version - clutter_interface_age)])
 m4_define([lt_revision], [clutter_interface_age])
 m4_define([lt_age],      [m4_eval(clutter_binary_age - clutter_interface_age)])
 CLUTTER_LT_CURRENT=lt_current
