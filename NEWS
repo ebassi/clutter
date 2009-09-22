@@ -1,3 +1,55 @@
+Clutter 1.0.6 (22/09/2009)
+===============================================================================
+
+  * List of changes since 1.0.4
+
+    o Various documentation improvements including a new ClutterPath migration
+      guide, a Glossary and objects index
+
+    o A couple of new unit tests for: initial actor sizing, preferred actor
+      size and ClutterGroup depth sorting
+
+    o Fix ClutterGroup depth sorting
+
+    o Fix double to float type conversions in ClutterScript and update
+      test-script.json so it doesn't refer to old Actor types such as
+      ClutterLabel.
+
+    o Do not attempt to free empty ClutterModel column names
+
+    o Fix the BlendString parser so numbers can be part of function names
+      allowing use of DOT3_RGB
+
+    o Fix the parsing of special "signal-" property names available when
+      using the ClutterAnimation vararg API
+
+    o Adds a "use-markup" property getter for ClutterText
+
+    o Account for clock roll backs between frames so timelines don't simply
+      hang
+
+    o Disable mipmap filters before checking framebuffer object completeness
+      since some drivers consider texture objects incomplete if a mipmap
+      filter is set but the mipmap data hasn't yet been uploaded.
+
+    o Various Makefile fixes, including fixes for the %.c: %.glsl codegen rules
+      for GLES2, use AM_SILENT_RULES for automake > 1.11, use a shared set of
+      defines for silencing make rules (Makefile.am.silent) and cleanup some
+      misuse of CLUTTER_MAJORMINOR.
+
+    o Fix cogl_clear so the alpha component isn't ignored
+
+    o Fix for the GLES 2.0 Cogl backend and the eglx Clutter backend
+
+Many thanks to:
+
+    Damien Lespiau
+    Emmanuele Bassi
+    Neil Roberts
+    Øyvind Kolås
+    Samuel Degrande
+    Zhou Jiangwei
+
 Clutter 1.0.4 (25/08/2009)
 ===============================================================================
 
