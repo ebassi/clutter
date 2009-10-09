@@ -219,6 +219,10 @@ dump_value (JsonGenerator *generator,
       g_string_append_printf (buffer, "%f", g_value_get_float (&value));
       break;
 
+    case G_TYPE_DOUBLE:
+      g_string_append_printf (buffer, "%f", g_value_get_double (&value));
+      break;
+
     case G_TYPE_BOOLEAN:
       g_string_append_printf (buffer, "%s",
                               g_value_get_boolean (&value) ? "true" : "false");
