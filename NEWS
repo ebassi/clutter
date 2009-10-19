@@ -1,3 +1,32 @@
+Clutter 1.0.8 (19/10/2009)
+===============================================================================
+
+  * List of changes since 1.0.6
+
+    o Documentation fixes and updates
+
+    o Unset the IN_DESTRUCTION flag when leaving ::destroy
+
+    o Fix components validation in the Vertex Buffer API
+
+    o Allow omitting the alpha when converting from string to color
+
+    o Do not overwrite the :use-markup property when setting the :text one
+
+    o Add support for pre-edit strings in ClutterText; this is an
+      API addition.
+
+    o Clarify the ID pool warning
+
+    o Notify the :position property of ClutterText when it changes
+
+Many thanks to:
+
+  Damien Lespiau
+  Neil Roberts
+  Robert Bragg
+  Thomas Wood
+
 Clutter 1.0.6 (22/09/2009)
 ===============================================================================
 
