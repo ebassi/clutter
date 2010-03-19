@@ -331,6 +331,11 @@ void _clutter_run_repaint_functions (void);
 
 gint32 _clutter_backend_get_units_serial (ClutterBackend *backend);
 
+/* XXX - this is going to be a public function in Clutter 1.4 */
+void _clutter_geometry_union (const ClutterGeometry *geometry_a,
+                              const ClutterGeometry *geometry_b,
+                              ClutterGeometry       *result);
+
 G_END_DECLS
 
 #endif /* _HAVE_CLUTTER_PRIVATE_H */
