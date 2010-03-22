@@ -1,3 +1,26 @@
+Clutter 1.2.4 (22/03/2010)
+===============================================================================
+
+  • List of changes since Clutter 1.2.2
+
+    » Revert patch for bug 2017 which broke subclassing ClutterListModel
+
+    » Add more error reporting in case the GLX context creation failed
+
+    » Fix cogl_texture_get_data() returning garbage
+
+    » Fix the computation of the stage bounding rectangle when submitting
+      clipped redraw requests
+
+    » Switch texture units before setting the Cogl texture filters
+
+    » Make sure that GLX_SGI_swap_control is set up correctly
+
+Many thanks to:
+
+  Owen W. Taylor
+  Adel Gadllah
+
 Clutter 1.2.2 (15/03/2010)
 ===============================================================================
 
