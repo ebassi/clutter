@@ -336,6 +336,9 @@ void _clutter_geometry_union (const ClutterGeometry *geometry_a,
                               const ClutterGeometry *geometry_b,
                               ClutterGeometry       *result);
 
+/* XXX - this is going to be a public function in Clutter 1.4 */
+gboolean _clutter_actor_has_allocation (ClutterActor *self);
+
 G_END_DECLS
 
 #endif /* _HAVE_CLUTTER_PRIVATE_H */
