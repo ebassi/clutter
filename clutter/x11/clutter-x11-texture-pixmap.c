@@ -825,9 +825,11 @@ clutter_x11_texture_pixmap_class_init (ClutterX11TexturePixmapClass *klass)
                   G_TYPE_INT,
                   G_TYPE_INT);
 
-  g_signal_override_class_handler ("queue-damage-redraw",
+  g_signal_override_class_closure (signals[QUEUE_DAMAGE_REDRAW],
                                    CLUTTER_X11_TYPE_TEXTURE_PIXMAP,
-                                   G_CALLBACK (clutter_x11_texture_pixmap_real_queue_damage_redraw));
+                                   g_cclosure_new ((GCallback) clutter_x11_texture_pixmap_real_queue_damage_redraw,
+                                                   NULL,
+                                                   NULL));
 
   default_backend = clutter_get_default_backend ();
 
