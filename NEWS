@@ -1,3 +1,36 @@
+Clutter 1.2.6 (19/04/2010)
+===============================================================================
+
+  • List of changes since Clutter 1.2.4
+
+    » Check if the TexturePixmap actor have an allocation before
+      asking for its allocation box, to avoid a costly re-layout.
+
+    » Handle spurious GLX_BufferSwapComplete events more gracefully
+      than an assertion failure.
+
+    » Fix a memory leak in the atlas.
+
+    » Use the right constant when calling GetClassLongPtr() in the
+      win32 event handling code; this fixes a compilation issue on
+      win64.
+
+    » Check the size of the Pango layouts in the cache to avoid
+      blowing cache slots.
+
+    » Remove the need for using a function introduced by GLib 2.18,
+      to keep our current requirements.
+
+    » Documentation fixes in Clutter and COGL
+
+Many thanks to:
+
+  Fridrich Strba
+  Neil Roberts
+  Owen W. Taylor
+  Rob Bradford
+  Robert Bragg
+
 Clutter 1.2.4 (22/03/2010)
 ===============================================================================
 
