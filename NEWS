@@ -1,3 +1,39 @@
+Clutter 1.2.8 (10/05/2010)
+===============================================================================
+
+  • List of changes since Clutter 1.2.6
+
+    » Ignore unexpected GLX_BufferSwapComplete coming from Mesa (bug #2102)
+
+    » Use the correct function for the GL_OES_framebuffer_object extension
+
+    » Fix the chaining up of the GLX backend when dealing with redirected
+      event handling (e.g. by Mutter) (bug #2101)
+
+    » Do not attempt to use GL to convert formats under GLES (bug #2059)
+
+    » Improve the robustness of the checks dealing with the maximum
+      amount of layers in a CoglMaterial (bug #2064)
+
+    » Fix cogl_read_pixels() on GLES (bug #2057)
+
+    » Do not try to union sub paths (bug #2088)
+
+    » Fix the clip stack (bug #2079)
+
+    » Fix clutter_event_get_coords() for ENTER and LEAVE events.
+
+    » Documentation fixes in the Cogl path API
+
+    » Fix typos in the introspection annotations
+
+Many thanks to:
+
+  Neil Roberts
+  Owen W. Taylor
+  Damien Lespiau
+  Jussi Kukkonen
+
 Clutter 1.2.6 (19/04/2010)
 ===============================================================================
 
