@@ -558,7 +558,7 @@ arg_to_gl_blend_factor (CoglBlendStringArgument *arg)
   else if (arg->factor.source.info->type ==
            COGL_BLEND_STRING_COLOR_SOURCE_SRC_COLOR)
     {
-      if (arg->factor.source.mask == COGL_BLEND_STRING_CHANNEL_MASK_RGB)
+      if (arg->factor.source.mask != COGL_BLEND_STRING_CHANNEL_MASK_ALPHA)
         {
           if (arg->factor.source.one_minus)
             return GL_ONE_MINUS_SRC_COLOR;
@@ -576,7 +576,7 @@ arg_to_gl_blend_factor (CoglBlendStringArgument *arg)
   else if (arg->factor.source.info->type ==
            COGL_BLEND_STRING_COLOR_SOURCE_DST_COLOR)
     {
-      if (arg->factor.source.mask == COGL_BLEND_STRING_CHANNEL_MASK_RGB)
+      if (arg->factor.source.mask != COGL_BLEND_STRING_CHANNEL_MASK_ALPHA)
         {
           if (arg->factor.source.one_minus)
             return GL_ONE_MINUS_DST_COLOR;
@@ -595,7 +595,7 @@ arg_to_gl_blend_factor (CoglBlendStringArgument *arg)
   else if (arg->factor.source.info->type ==
            COGL_BLEND_STRING_COLOR_SOURCE_CONSTANT)
     {
-      if (arg->factor.source.mask == COGL_BLEND_STRING_CHANNEL_MASK_RGB)
+      if (arg->factor.source.mask != COGL_BLEND_STRING_CHANNEL_MASK_ALPHA)
         {
           if (arg->factor.source.one_minus)
             return GL_ONE_MINUS_CONSTANT_COLOR;
@@ -646,7 +646,6 @@ cogl_material_set_blend (CoglHandle handle,
 {
   CoglMaterial *material;
   CoglBlendStringStatement statements[2];
-  CoglBlendStringStatement split[2];
   CoglBlendStringStatement *rgb;
   CoglBlendStringStatement *a;
   GError *internal_error = NULL;
@@ -674,13 +673,8 @@ cogl_material_set_blend (CoglHandle handle,
       return FALSE;
     }
 
-  if (statements[0].mask == COGL_BLEND_STRING_CHANNEL_MASK_RGBA)
-    {
-      _cogl_blend_string_split_rgba_statement (statements,
-                                               &split[0], &split[1]);
-      rgb = &split[0];
-      a = &split[1];
-    }
+  if (count == 1)
+    rgb = a = statements;
   else
     {
       rgb = &statements[0];
