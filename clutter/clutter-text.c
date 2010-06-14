@@ -442,7 +442,7 @@ clutter_text_create_layout_no_cache (ClutterText *text,
       gint width;
 
       width = allocation_width > 0
-        ? (allocation_width * 1024)
+        ? (allocation_width * 1024 + 0.5f)
         : -1;
 
       pango_layout_set_width (layout, width);
@@ -465,7 +465,7 @@ clutter_text_create_layout_no_cache (ClutterText *text,
       gint height;
 
       height = allocation_height > 0
-        ? (allocation_height * 1024)
+        ? (allocation_height * 1024 + 0.5f)
         : -1;
 
       pango_layout_set_height (layout, height);
