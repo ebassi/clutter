@@ -49,7 +49,7 @@ AC_PREREQ([2.59])
 
 AC_INIT([clutter],
         [clutter_version],
-        [http://bugzilla.o-hand.com/enter_bug.cgi?product=Clutter])
+        [http://bugzilla.clutter-project.org/enter_bug.cgi?product=clutter])
 
 AC_CONFIG_SRCDIR([clutter/clutter.h])
 AC_CONFIG_HEADERS([config.h])
