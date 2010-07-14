@@ -1,3 +1,41 @@
+Clutter 1.2.12 (14/07/2010)
+===============================================================================
+
+  • List of changes since Clutter 1.2.10
+
+    » Provide a fallback for MESA_copy_sub_buffer by using the
+      EXT_blit_framebuffer extension. (BCP#2128)
+
+    » Never promote clipped redraws to fullscreen redraws. (BCP#2136)
+
+    » Fix rounding error in ClutterText. (BCP#2170)
+
+    » Fix drawing of transparent stages on X11. (BCP#2050)
+
+    » ClutterAnimator bug fixes.
+
+    » ClutterAnimation fixes for vector-based API. (BCP#2149)
+
+    » Fixes for the Windows backend event handling. (BCP#2135)
+
+    » Fixes for the setup of the GL context on OSX. (BCP#1394)
+
+    » Documentation improvements. (BCP#2081, BCP#2133)
+
+    » Build fixes for the conformance test suite. (BCP#1930)
+
+Many thanks to:
+
+  Neil Roberts
+  Øyvind Kolås
+  Robert Bragg
+  Adel Gadllah
+  Alejandro Piñeiro
+  Alexandros Frantzis
+  Chris Lord
+  Colin Walters
+  Elliot Smith
+
 Clutter 1.2.10 (08/06/2010)
 ===============================================================================
 
