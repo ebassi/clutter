@@ -470,7 +470,7 @@ cogl_material_set_shininess (CoglHandle handle,
 
   g_return_if_fail (cogl_is_material (handle));
 
-  if (shininess < 0.0 || shininess > 1.0)
+  if (shininess < 0.0)
     g_warning ("Out of range shininess %f supplied for material\n",
 	       shininess);
 
@@ -479,7 +479,7 @@ cogl_material_set_shininess (CoglHandle handle,
   /* possibly flush primitives referencing the current state... */
   _cogl_material_pre_change_notify (material, FALSE, NULL);
 
-  material->shininess = (GLfloat)shininess * 128.0;
+  material->shininess = (GLfloat)shininess;
 
   material->flags &= ~COGL_MATERIAL_FLAG_DEFAULT_GL_MATERIAL;
 }
