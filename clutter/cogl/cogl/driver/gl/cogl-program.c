@@ -72,6 +72,8 @@ _cogl_program_free (CoglProgram *program)
      released! Do that separately before this! */
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
   glDeleteObject (program->gl_handle);
+
+  g_slice_free (CoglProgram, program);
 }
 
 CoglHandle

@@ -51,6 +51,8 @@ _cogl_shader_free (CoglShader *shader)
      released! Do that separately before this! */
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
   glDeleteObject (shader->gl_handle);
+
+  g_slice_free (CoglShader, shader);
 }
 
 CoglHandle
