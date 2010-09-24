@@ -1,3 +1,27 @@
+Clutter 1.2.14 (24/09/2010)
+===============================================================================
+
+  • List of changes since Clutter 1.2.12
+
+    » Backport GLES detection logic, and remove an unwanted GL dependency
+      when building EGLX backends against Mesa.
+
+    » Fix build on Quartz.
+
+    » Plug leaks in CoglProgram and CoglShader.
+
+    » Fixes for CoglShader usage on GLES2.
+
+    » Backport a fix in the request mode of ClutterBoxLayout.
+
+    » Documentation fixes.
+
+Many thanks to:
+
+  Neil Roberts
+  Alexandros Frantzis
+  Nate Stedman
+
 Clutter 1.2.12 (14/07/2010)
 ===============================================================================
 
