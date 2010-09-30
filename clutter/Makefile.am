@@ -390,7 +390,7 @@ BUILT_GIRSOURCES += Cogl-@CLUTTER_API_VERSION@.gir
 cally_sources=$(top_srcdir)/clutter/cally/*.h $(top_srcdir)/clutter/cally/*.c
 cally_introspection_files=$(filter-out %-private.h, $(cally_sources))
 
-Cally-@CLUTTER_API_VERSION@.gir: Clutter-@CLUTTER_API_VERSION@.gir Makefile
+Cally-@CLUTTER_API_VERSION@.gir: Clutter-@CLUTTER_API_VERSION@.gir Cogl-@CLUTTER_API_VERSION@.gir Makefile
 
 Cally_@CLUTTER_API_VERSION_AM@_gir_NAMESPACE = Cally
 Cally_@CLUTTER_API_VERSION_AM@_gir_VERSION = @CLUTTER_API_VERSION@
