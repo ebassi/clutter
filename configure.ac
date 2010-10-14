@@ -239,7 +239,7 @@ AS_CASE([$CLUTTER_FLAVOUR],
         [
           # the GL header is defined in the COGL checks above
           CLUTTER_STAGE_TYPE="CLUTTER_TYPE_STAGE_EGLNATIVE"
-          CLUTTER_EGL_BACKEND="cex100"
+          CLUTTER_EGL_BACKEND="generic"
 
           SUPPORT_EGL=1
           SUPPORT_EGL_PLATFORM_POWERVR_NULL=1
@@ -261,6 +261,7 @@ AS_CASE([$CLUTTER_FLAVOUR],
         [cex100],
         [
           CLUTTER_STAGE_TYPE="CLUTTER_TYPE_STAGE_EGL"
+          CLUTTER_EGL_BACKEND="cex100"
 
           SUPPORT_EGL=1
           SUPPORT_EGL_PLATFORM_POWERVR_GDL=1
