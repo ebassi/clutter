@@ -118,6 +118,8 @@ struct _ClutterStagePrivate
 
   gint                picks_per_frame;
 
+  ClutterPickMode     pick_buffer_mode;
+
   guint redraw_pending         : 1;
   guint is_fullscreen          : 1;
   guint is_cursor_visible      : 1;
@@ -749,7 +751,7 @@ clutter_stage_real_queue_redraw (ClutterActor *actor,
    * state changes that affects painting *or* picking so we can use
    * this point to invalidate any currently cached pick buffer.
    */
-  _clutter_stage_set_pick_buffer_valid (stage, FALSE);
+  _clutter_stage_set_pick_buffer_valid (stage, FALSE, -1);
 
   /* If the backend can't do anything with redraw clips (e.g. it already knows
    * it needs to redraw everything anyway) then don't spend time transforming
@@ -1470,7 +1472,7 @@ clutter_stage_init (ClutterStage *self)
   _clutter_stage_window_get_geometry (priv->impl, &geom);
   _clutter_stage_set_viewport (self, 0, 0, geom.width, geom.height);
 
-  _clutter_stage_set_pick_buffer_valid (self, FALSE);
+  _clutter_stage_set_pick_buffer_valid (self, FALSE, CLUTTER_PICK_ALL);
   _clutter_stage_reset_picks_per_frame_counter (self);
 }
 
@@ -2951,20 +2953,25 @@ clutter_stage_get_no_clear_hint (ClutterStage *stage)
 }
 
 gboolean
-_clutter_stage_get_pick_buffer_valid (ClutterStage *stage)
+_clutter_stage_get_pick_buffer_valid (ClutterStage *stage, ClutterPickMode mode)
 {
   g_return_val_if_fail (CLUTTER_IS_STAGE (stage), FALSE);
+
+  if (stage->priv->pick_buffer_mode != mode)
+    return FALSE;
 
   return stage->priv->have_valid_pick_buffer;
 }
 
 void
-_clutter_stage_set_pick_buffer_valid (ClutterStage *stage,
-                                      gboolean      valid)
+_clutter_stage_set_pick_buffer_valid (ClutterStage   *stage,
+                                      gboolean        valid,
+                                      ClutterPickMode mode)
 {
   g_return_if_fail (CLUTTER_IS_STAGE (stage));
 
   stage->priv->have_valid_pick_buffer = !!valid;
+  stage->priv->pick_buffer_mode = mode;
 }
 
 void
