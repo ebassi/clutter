@@ -75,7 +75,8 @@ typedef struct
   CoglMaterialFogState legacy_fog_state;
 
   /* Materials */
-  CoglMaterial     *simple_material;
+  CoglMaterial     *simple_material; /* used for set_source_color */
+  CoglMaterial     *texture_material; /* used for set_source_texture */
   CoglMaterial     *source_material;
   GString          *arbfp_source_buffer;
 
