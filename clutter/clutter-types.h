@@ -53,6 +53,8 @@ typedef struct _ClutterAction           ClutterAction;
 typedef struct _ClutterConstraint       ClutterConstraint;
 typedef struct _ClutterEffect           ClutterEffect;
 
+typedef struct _ClutterContent          ClutterContent; /* dummy */
+
 typedef struct _ClutterShader           ClutterShader;
 
 typedef struct _ClutterColor            ClutterColor;
