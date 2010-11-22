@@ -132,6 +132,7 @@ source_h =					\
 	$(srcdir)/clutter-path-constraint.h	\
 	$(srcdir)/clutter-path.h		\
 	$(srcdir)/clutter-rectangle.h		\
+	$(srcdir)/clutter-rgba.h		\
 	$(srcdir)/clutter-score.h 		\
 	$(srcdir)/clutter-script.h		\
 	$(srcdir)/clutter-scriptable.h		\
@@ -217,6 +218,7 @@ source_c = \
 	$(srcdir)/clutter-path-constraint.c	\
 	$(srcdir)/clutter-path.c		\
 	$(srcdir)/clutter-rectangle.c 		\
+	$(srcdir)/clutter-rgba.c		\
 	$(srcdir)/clutter-score.c 		\
 	$(srcdir)/clutter-script.c		\
 	$(srcdir)/clutter-script-parser.c	\

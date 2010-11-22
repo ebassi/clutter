@@ -91,6 +91,7 @@
 #include "clutter-path-constraint.h"
 #include "clutter-path.h"
 #include "clutter-rectangle.h"
+#include "clutter-rgba.h"
 #include "clutter-score.h"
 #include "clutter-scriptable.h"
 #include "clutter-script.h"
