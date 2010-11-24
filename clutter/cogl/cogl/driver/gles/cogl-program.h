@@ -36,6 +36,7 @@ struct _CoglProgram
 {
   CoglHandleObject   _parent;
 
+#ifdef HAVE_COGL_GLES2
   GSList            *attached_shaders;
 
   char              *custom_uniform_names[COGL_PROGRAM_NUM_CUSTOM_UNIFORMS];
@@ -45,6 +46,7 @@ struct _CoglProgram
   /* Uniforms that have changed since the last time this program was
    * used. */
   guint32            dirty_custom_uniforms;
+#endif
 };
 
 CoglProgram *_cogl_program_pointer_from_handle (CoglHandle handle);

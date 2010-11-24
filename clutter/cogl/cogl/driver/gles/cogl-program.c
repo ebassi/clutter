@@ -339,6 +339,12 @@ cogl_program_uniform_matrix (int   uniform_no,
                                    uniform_no, size, count, transpose, value);
 }
 
+CoglShaderLanguage
+_cogl_program_get_language (CoglHandle handle)
+{
+  return COGL_SHADER_LANGUAGE_GLSL;
+}
+
 #else /* HAVE_COGL_GLES2 */
 
 /* No support on regular OpenGL 1.1 */
@@ -396,8 +402,22 @@ cogl_program_uniform_1f (int uniform_no,
 }
 
 void
+cogl_program_set_uniform_1f (CoglHandle handle,
+                             int uniform_location,
+                             float value)
+{
+}
+
+void
 cogl_program_uniform_1i (int uniform_no,
                          int    value)
+{
+}
+
+void
+cogl_program_set_uniform_1i (CoglHandle handle,
+                             int uniform_location,
+                             int value)
 {
 }
 
@@ -410,10 +430,38 @@ cogl_program_uniform_float (int  uniform_no,
 }
 
 void
+cogl_program_set_uniform_float (CoglHandle handle,
+                                int uniform_location,
+                                int n_components,
+                                int count,
+                                const float *value)
+{
+}
+
+void
 cogl_program_uniform_int (int  uniform_no,
                           int     size,
                           int     count,
                           const int *value)
+{
+}
+
+void
+cogl_program_set_uniform_int (CoglHandle handle,
+                              int uniform_location,
+                              int n_components,
+                              int count,
+                              const int *value)
+{
+}
+
+void
+cogl_program_set_uniform_matrix (CoglHandle handle,
+                                 int uniform_location,
+                                 int dimensions,
+                                 int count,
+                                 gboolean transpose,
+                                 const float *value)
 {
 }
 
@@ -428,10 +476,3 @@ cogl_program_uniform_matrix (int   uniform_no,
 
 
 #endif /* HAVE_COGL_GLES2 */
-
-CoglShaderLanguage
-_cogl_program_get_language (CoglHandle handle)
-{
-  return COGL_SHADER_LANGUAGE_GLSL;
-}
-
