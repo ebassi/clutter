@@ -1987,6 +1987,9 @@ clutter_text_get_preferred_height (ClutterActor *self,
       gint logical_height;
       gfloat layout_height;
 
+      if (priv->single_line_mode)
+        for_width = -1;
+
       layout = clutter_text_create_layout (CLUTTER_TEXT (self),
                                            for_width, -1);
 
@@ -2004,7 +2007,7 @@ clutter_text_get_preferred_height (ClutterActor *self,
           /* if we wrap and ellipsize then the minimum height is
            * going to be at least the size of the first line
            */
-          if (priv->ellipsize && priv->wrap)
+          if ((priv->ellipsize && priv->wrap) && !priv->single_line_mode)
             {
               PangoLayoutLine *line;
               gfloat line_height;
