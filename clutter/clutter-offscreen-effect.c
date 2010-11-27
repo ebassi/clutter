@@ -155,7 +155,8 @@ update_fbo (ClutterEffect *effect)
    */
   clutter_actor_get_transformed_size (priv->actor, &width, &height);
   if (priv->target_width == width &&
-      priv->target_height == height)
+      priv->target_height == height &&
+      priv->offscreen != COGL_INVALID_HANDLE)
     return TRUE;
 
   if (priv->target != COGL_INVALID_HANDLE)
