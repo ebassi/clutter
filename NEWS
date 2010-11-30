@@ -1,3 +1,49 @@
+Clutter 1.4.2  (30/11/2010)
+===============================================================================
+
+  • List of changes since Clutter 1.4.0
+
+    » Optimize ClutterText's preferred height computations when
+      in single line mode.
+
+    » Fix build for CEx100 backend.
+
+    » Fix the example code in the Cookbook recipes to be C90 compliant.
+
+    » Add optimizations in ClutterActor for show, hide and queue_relayou().
+
+    » Build fixes for introspection data.
+
+    » Trap glXDestroyPixmap() to avoid an ordering issue when freeing
+      pixmaps.
+
+    » Fix segfaults with empty XSettings and font names.
+
+    » Do not use exclusive pointer grabs in ClickAction.
+
+    » Fixes for the win32 backend.
+
+    » Do not destroy materials and shaders when not needed.
+
+    » Leaks fixed.
+
+Many thanks to:
+
+  Neil Roberts
+  Tomeu Vizoso
+  Elliot Smith
+  Alexandre Quessy
+  Aron Xu
+  Chris Lord
+  Damien Lespiau
+  Lucas Rocha
+  Ole André Vadla Ravnås
+  Rob Staudinger
+  Robert Ancell
+  Robert Bragg
+  Roland Peffer
+  Stephen Kennedy
+
 Clutter 1.4.0  (24/09/2010)
 ===============================================================================
 
