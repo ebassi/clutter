@@ -675,15 +675,15 @@ static ClutterPaintVolume *_clutter_actor_get_paint_volume_mutable (ClutterActor
 
 static GQuark quark_shader_data = 0;
 
-G_DEFINE_ABSTRACT_TYPE_WITH_CODE (ClutterActor,
-                                  clutter_actor,
-                                  G_TYPE_INITIALLY_UNOWNED,
-                                  G_IMPLEMENT_INTERFACE (CLUTTER_TYPE_SCRIPTABLE,
-                                                         clutter_scriptable_iface_init)
-                                  G_IMPLEMENT_INTERFACE (CLUTTER_TYPE_ANIMATABLE,
-                                                         clutter_animatable_iface_init)
-                                  G_IMPLEMENT_INTERFACE (ATK_TYPE_IMPLEMENTOR,
-                                                         atk_implementor_iface_init));
+G_DEFINE_TYPE_WITH_CODE (ClutterActor,
+                         clutter_actor,
+                         G_TYPE_INITIALLY_UNOWNED,
+                         G_IMPLEMENT_INTERFACE (CLUTTER_TYPE_SCRIPTABLE,
+                                                clutter_scriptable_iface_init)
+                         G_IMPLEMENT_INTERFACE (CLUTTER_TYPE_ANIMATABLE,
+                                                clutter_animatable_iface_init)
+                         G_IMPLEMENT_INTERFACE (ATK_TYPE_IMPLEMENTOR,
+                                                atk_implementor_iface_init));
 
 G_CONST_RETURN gchar *
 _clutter_actor_get_debug_name (ClutterActor *actor)
@@ -12160,6 +12160,38 @@ _clutter_actor_traverse (ClutterActor              *actor,
                                    user_data);
 }
 
+/**
+ * clutter_actor_new:
+ *
+ * Creates a new #ClutterActor instance.
+ *
+ * An actor created this way will not have any implicit size, nor
+ * will paint anything.
+ *
+ * Return value: the newly created #ClutterActor instance
+ *
+ * Since: 1.6
+ */
+ClutterActor *
+clutter_actor_new (void)
+{
+  return g_object_new (CLUTTER_TYPE_ACTOR, NULL);
+}
+
+/**
+ * clutter_actor_set_content:
+ * @self: a #ClutterActor
+ * @content: a #ClutterContent
+ *
+ * Sets @content to be the painted content of a #ClutterActor.
+ *
+ * The actor will take a reference on @content.
+ *
+ * If the actor already has an existing content, it will release
+ * the reference it holds on it.
+ *
+ * Since: 1.6
+ */
 void
 clutter_actor_set_content (ClutterActor   *self,
                            ClutterContent *content)
@@ -12190,6 +12222,17 @@ clutter_actor_set_content (ClutterActor   *self,
   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_CONTENT]);
 }
 
+/**
+ * clutter_actor_get_content:
+ * @self: a #ClutterActor
+ *
+ * Retrieves a pointer to the #ClutterContent set using
+ * clutter_actor_set_content().
+ *
+ * Return value: (transfer none): a #ClutterContent, or %NULL
+ *
+ * Since: 1.6
+ */
 ClutterContent *
 clutter_actor_get_content (ClutterActor *self)
 {
