@@ -121,6 +121,10 @@
 
 #include "cally.h" /* For accessibility support */
 
+#ifdef USE_GDKPIXBUF
+#include "image-loaders/clutter-image-loader-pixbuf.h"
+#endif
+
 /* main context */
 static ClutterMainContext *ClutterCntx       = NULL;
 
@@ -3133,6 +3137,8 @@ _clutter_io_modules_ensure_loaded (void)
 
   if (!loaded_dirs)
     {
+      volatile GType dummy_type;
+
       loaded_dirs = TRUE;
 
       g_io_modules_scan_all_in_directory (CLUTTER_MODULEDIR);
@@ -3153,6 +3159,10 @@ _clutter_io_modules_ensure_loaded (void)
         }
 
       /* XXX Initialize types from built-in "modules" here XXX */
+
+#ifdef USE_GDKPIXBUF
+      dummy_type = _clutter_image_loader_pixbuf_get_type ();
+#endif
     }
 
   G_UNLOCK (loaded_dirs);

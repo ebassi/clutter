@@ -611,6 +611,11 @@ imageloader_sources_h = \
 	$(srcdir)/image-loaders/clutter-image-loader-null.h	\
 	$(NULL)
 
+if SUPPORT_GDK_PIXBUF
+imageloader_sources_c += $(srcdir)/image-loaders/clutter-image-loader-pixbuf.c
+imageloader_sources_h += $(srcdir)/image-loaders/clutter-image-loader-pixbuf.h
+endif
+
 # general build rules:
 # you should not need to modify anything below this point
 
