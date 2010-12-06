@@ -970,6 +970,15 @@ AS_IF([test "x$SUPPORT_XLIB" = "x1"],
 AM_CONDITIONAL([BUILD_XI2], [test "x$have_xinput2" = "xyes"])
 AM_CONDITIONAL(X11_TESTS, [test "x$x11_tests" = "xyes"])
 
+dnl Modules directory
+
+AC_ARG_WITH([clutter-module-dir],
+            [AC_HELP_STRING([--with-clutter-module-dir=PATH],
+                            [Load clutter modules from this directory [LIBDIR/gio/modules]])],
+            [],
+            [with_clutter_module_dir='${libdir}/clutter/modules'])
+AC_SUBST([CLUTTER_MODULE_DIR], [$with_clutter_module_dir])
+
 dnl === Enable debug level ====================================================
 
 m4_define([debug_default], [m4_if(m4_eval(clutter_minor_version % 2), [1], [yes], [minimum])])
@@ -1294,6 +1303,7 @@ echo " • Global:"
 echo "        Prefix: ${prefix}"
 echo "        Flavour: ${CLUTTER_WINSYS}/${COGL_DRIVER}"
 echo "        Target library: ${CLUTTER_WINSYS_LIB}"
+echo "        Modules directory: ${with_clutter_module_dir}"
 
 # Compiler/Debug related flags
 echo ""

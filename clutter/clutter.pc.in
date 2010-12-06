@@ -3,6 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
+modulesdir=@CLUTTER_MODULE_DIR@
 apiversion=@CLUTTER_API_VERSION@
 winsys=@CLUTTER_WINSYS@
 soname_infix=@CLUTTER_SONAME_INFIX@
