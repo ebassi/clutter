@@ -82,6 +82,7 @@ units_sources += \
 	test-color.c			\
 	test-model.c			\
 	test-script-parser.c		\
+	test-image.c			\
         $(NULL)
 
 test_conformance_SOURCES = $(common_sources) $(units_sources)

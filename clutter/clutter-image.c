@@ -7,11 +7,14 @@
 #include "clutter-image.h"
 
 #include "clutter-debug.h"
+#include "clutter-image-loader.h"
 #include "clutter-marshal.h"
 #include "clutter-private.h"
 
 struct _ClutterImagePrivate
 {
+  ClutterImageLoader *loader;
+
   gint image_width;
   gint image_height;
 
@@ -132,6 +135,8 @@ clutter_image_class_init (ClutterImageClass *klass)
   gobject_class->get_property = clutter_image_get_property;
   g_object_class_install_properties (gobject_class, LAST_PROP, image_props);
 
+  gobject_class->dispose = clutter_image_dispose;
+
   image_signals[SIZE_CHANGED] =
     g_signal_new (I_("size-changed"),
                   G_TYPE_FROM_CLASS (klass),
@@ -221,11 +226,69 @@ clutter_image_load (ClutterImage  *image,
                     gint          *height,
                     GError       **error)
 {
+  ClutterImagePrivate *priv;
+  GFileInputStream *stream;
+  CoglHandle texture;
+  gboolean res;
+
   g_return_val_if_fail (CLUTTER_IS_IMAGE (image), FALSE);
   g_return_val_if_fail (G_IS_FILE (gfile), FALSE);
   g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable),
                         FALSE);
 
+  priv = image->priv;
+
+  if (priv->loader == NULL)
+    {
+      priv->loader = _clutter_image_loader_new ();
+      if (priv->loader == NULL)
+        return FALSE;
+
+      CLUTTER_NOTE (MISC, "Image loader type: %s",
+                    G_OBJECT_TYPE_NAME (priv->loader));
+    }
+
+  stream = g_file_read (gfile, cancellable, error);
+  if (stream == NULL)
+    return FALSE;
+
+  res = _clutter_image_loader_load_stream (priv->loader,
+                                           G_INPUT_STREAM (stream),
+                                           cancellable,
+                                           error);
+  if (!res)
+    {
+      g_object_unref (stream);
+      return FALSE;
+    }
+
+  _clutter_image_loader_get_image_size (priv->loader,
+                                        &priv->image_width,
+                                        &priv->image_height);
+
+  texture = _clutter_image_loader_get_texture_handle (priv->loader);
+  if (texture == COGL_INVALID_HANDLE)
+    {
+      g_object_unref (stream);
+      return FALSE;
+    }
+
+  cogl_material_set_layer (priv->material, 0, texture);
+
+  g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
+                 priv->image_width,
+                 priv->image_height);
+
+  if (width)
+    *width = priv->image_width;
+
+  if (height)
+    *height = priv->image_height;
+
+  g_object_unref (priv->loader);
+  priv->loader = NULL;
+
+  g_object_unref (stream);
 
   return TRUE;
 }
