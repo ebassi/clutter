@@ -294,6 +294,7 @@
 #include "clutter-behaviour.h"
 #include "clutter-constraint.h"
 #include "clutter-container.h"
+#include "clutter-content-private.h"
 #include "clutter-debug.h"
 #include "clutter-effect-private.h"
 #include "clutter-enum-types.h"
@@ -480,6 +481,8 @@ struct _ClutterActorPrivate
   ClutterPaintVolume last_paint_volume;
 
   ClutterStageQueueRedrawEntry *queue_redraw_entry;
+
+  ClutterContent *content;
 };
 
 enum
@@ -566,10 +569,12 @@ enum
   PROP_CONSTRAINTS,
   PROP_EFFECT,
 
+  PROP_CONTENT,
+
   PROP_LAST
 };
 
-static GParamSpec *obj_props[PROP_LAST];
+static GParamSpec *obj_props[PROP_LAST] = { NULL, };
 
 enum
 {
@@ -1629,10 +1634,18 @@ static void
 clutter_actor_real_pick (ClutterActor       *self,
 			 const ClutterColor *color)
 {
+  ClutterActorPrivate *priv = self->priv;
+
   /* the default implementation is just to paint a rectangle
    * with the same size of the actor using the passed color
    */
-  if (clutter_actor_should_pick_paint (self))
+
+  if (!clutter_actor_should_pick_paint (self))
+    return;
+
+  if (priv->content != NULL)
+    _clutter_content_pick_content (priv->content, self, color);
+  else
     {
       ClutterActorBox box = { 0, };
       float width, height;
@@ -2797,6 +2810,10 @@ clutter_actor_paint (ClutterActor *self)
         clutter_actor_shader_pre_paint (self, FALSE);
 
       priv->propagated_one_redraw = FALSE;
+
+      if (priv->content != NULL)
+        clutter_content_paint_content (priv->content, self);
+
       g_signal_emit (self, actor_signals[PAINT], 0);
 
       if (effect_painted)
@@ -3477,6 +3494,13 @@ clutter_actor_dispose (GObject *object)
     {
       g_object_unref (priv->effects);
       priv->effects = NULL;
+    }
+
+  if (priv->content != NULL)
+    {
+      _clutter_content_remove_actor (priv->content, self);
+      g_object_unref (priv->content);
+      priv->content = NULL;
     }
 
   g_signal_emit (self, actor_signals[DESTROY], 0);
@@ -4424,6 +4448,15 @@ clutter_actor_class_init (ClutterActorClass *klass)
                                CLUTTER_PARAM_WRITABLE);
   obj_props[PROP_EFFECT] = pspec;
   g_object_class_install_property (object_class, PROP_EFFECT, pspec);
+
+  obj_props[PROP_CONTENT] =
+    g_param_spec_object ("content",
+                         P_("Content"),
+                         P_("The content object that should be painted"),
+                         CLUTTER_TYPE_CONTENT,
+                         CLUTTER_PARAM_READWRITE);
+  g_object_class_install_property (object_class, PROP_CONTENT,
+                                   obj_props[PROP_CONTENT]);
 
   /**
    * ClutterActor::destroy:
@@ -11724,6 +11757,23 @@ _clutter_actor_get_paint_volume_real (ClutterActor *self,
 
   _clutter_paint_volume_init_static (pv, self);
 
+  /* the default implementation of ClutterActor::get_paint_volume()
+   * returns FALSE; this means that if we create a base Actor and
+   * assign it a Content, the paint volume will be ignored by the
+   * check below. thus, if a Content is set, then it takes precedence
+   * over the Actor's implementation.
+   */
+  if (priv->content != NULL &&
+      !clutter_content_get_paint_volume (priv->content, self, pv))
+    {
+      clutter_paint_volume_free (pv);
+      CLUTTER_NOTE (CLIPPING, "Bail from get_paint_volume (%s): "
+                    "Content %s failed to report a volume",
+                    _clutter_actor_get_debug_name (self),
+                    G_OBJECT_TYPE_NAME (priv->content));
+      return FALSE;
+    }
+
   if (!CLUTTER_ACTOR_GET_CLASS (self)->get_paint_volume (self, pv))
     {
       clutter_paint_volume_free (pv);
@@ -12108,4 +12158,42 @@ _clutter_actor_traverse (ClutterActor              *actor,
                                    after_children_callback,
                                    0, /* start depth */
                                    user_data);
+}
+
+void
+clutter_actor_set_content (ClutterActor   *self,
+                           ClutterContent *content)
+{
+  ClutterActorPrivate *priv;
+
+  g_return_if_fail (CLUTTER_IS_ACTOR (self));
+  g_return_if_fail (content == NULL || CLUTTER_IS_CONTENT (content));
+
+  priv = self->priv;
+
+  if (priv->content == content)
+    return;
+
+  if (priv->content != NULL)
+    {
+      _clutter_content_remove_actor (priv->content, self);
+      g_object_unref (priv->content);
+    }
+
+  priv->content = content;
+  if (priv->content != NULL)
+    {
+      g_object_ref (priv->content);
+      _clutter_content_add_actor (priv->content, self);
+    }
+
+  g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_CONTENT]);
+}
+
+ClutterContent *
+clutter_actor_get_content (ClutterActor *self)
+{
+  g_return_val_if_fail (CLUTTER_IS_ACTOR (self), NULL);
+
+  return self->priv->content;
 }

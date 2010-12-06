@@ -580,6 +580,10 @@ const ClutterPaintVolume  *clutter_actor_get_transformed_paint_volume (ClutterAc
 gboolean             clutter_actor_get_paint_box      (ClutterActor         *self,
                                                        ClutterActorBox      *box);
 
+void                 clutter_actor_set_content        (ClutterActor         *self,
+                                                       ClutterContent       *content);
+ClutterContent *     clutter_actor_get_content        (ClutterActor         *self);
+
 G_END_DECLS
 
 #endif /* __CLUTTER_ACTOR_H__ */
