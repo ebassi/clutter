@@ -23,6 +23,7 @@ INCLUDES = \
 	-I$(top_srcdir)/clutter/$(CLUTTER_WINSYS_BASE)	\
 	-I$(top_srcdir)/clutter/cally			\
 	-I$(top_srcdir)/clutter/evdev			\
+	-I$(top_srcdir)/clutter/image-loaders		\
 	-I$(top_builddir)				\
 	-I$(top_builddir)/clutter			\
 	$(NULL)
@@ -113,6 +114,7 @@ source_h =					\
 	$(srcdir)/clutter-flow-layout.h		\
 	$(srcdir)/clutter-frame-source.h        \
 	$(srcdir)/clutter-group.h 		\
+	$(srcdir)/clutter-image-loader.h	\
 	$(srcdir)/clutter-image.h		\
 	$(srcdir)/clutter-input-device.h	\
         $(srcdir)/clutter-interval.h            \
@@ -196,6 +198,7 @@ source_c = \
 	$(srcdir)/clutter-flow-layout.c		\
 	$(srcdir)/clutter-frame-source.c	\
 	$(srcdir)/clutter-group.c 		\
+	$(srcdir)/clutter-image-loader.c	\
 	$(srcdir)/clutter-image.c		\
 	$(srcdir)/clutter-input-device.c	\
 	$(srcdir)/clutter-interval.c            \
@@ -599,6 +602,15 @@ cally_include_HEADERS = $(cally_sources_h)
 pc_files += cally/cally-$(CLUTTER_API_VERSION).pc
 EXTRA_DIST += cally/cally.pc.in
 
+# image loader backends
+imageloader_sources_c = \
+	$(srcdir)/image-loaders/clutter-image-loader-null.c 	\
+	$(NULL)
+
+imageloader_sources_h = \
+	$(srcdir)/image-loaders/clutter-image-loader-null.h	\
+	$(NULL)
+
 # general build rules:
 # you should not need to modify anything below this point
 
@@ -652,6 +664,8 @@ libclutter_@CLUTTER_SONAME_INFIX@_@CLUTTER_API_VERSION@_la_SOURCES = \
 	$(backend_source_h) \
 	$(backend_source_c_priv) \
 	$(backend_source_h_priv) \
+	$(imageloader_sources_c) \
+	$(imageloader_sources_h) \
 	$(source_c) \
 	$(source_h) \
 	$(source_c_priv) \

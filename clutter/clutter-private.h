@@ -241,6 +241,8 @@ typedef enum _ClutterCullResult
   CLUTTER_CULL_RESULT_PARTIAL
 } ClutterCullResult;
 
+void _clutter_io_modules_ensure_loaded (void);
+
 G_END_DECLS
 
 #endif /* __CLUTTER_PRIVATE_H__ */

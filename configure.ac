@@ -155,7 +155,7 @@ AC_SUBST([XCOMPOSITE_REQ_VERSION], [xcomposite_req_version])
 AM_PATH_GLIB_2_0([glib_req_version],
                  [],
                  [AC_MSG_ERROR([glib-2.0 is required])],
-                 [gobject gthread gmodule-no-export])
+                 [gobject gthread gmodule-no-export gio])
 
 # Check for -Bsymbolic-functions to avoid intra-library PLT jumps
 AC_ARG_ENABLE([Bsymbolic],
@@ -799,6 +799,8 @@ AS_CASE([$COGL_IMAGE_BACKEND],
 
         [AC_MSG_ERROR([Unknown argument for --with-imagebackend])]
 )
+
+AM_CONDITIONAL([SUPPORT_GDK_PIXBUF], [test "x$COGL_IMAGE_BACKEND" = "xgdk-pixbuf"])
 
 dnl === X11 checks, only for X11-based backends ===============================
 X11_PC_FILES=""

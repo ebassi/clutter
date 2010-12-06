@@ -92,6 +92,7 @@
 
 #include <stdlib.h>
 #include <glib/gi18n-lib.h>
+#include <gio/gio.h>
 #include <locale.h>
 
 #include "clutter-actor.h"
@@ -101,6 +102,7 @@
 #include "clutter-event.h"
 #include "clutter-feature.h"
 #include "clutter-frame-source.h"
+#include "clutter-image-loader.h"
 #include "clutter-main.h"
 #include "clutter-master-clock.h"
 #include "clutter-private.h"
@@ -3089,4 +3091,69 @@ _clutter_context_pop_shader_stack (ClutterActor *actor)
   context->shaders = g_slist_remove (context->shaders, actor);
 
   return _clutter_context_peek_shader_stack ();
+}
+
+/*
+ * Clutter modules
+ */
+
+G_LOCK_DEFINE_STATIC (registered_extensions);
+G_LOCK_DEFINE_STATIC (loaded_dirs);
+
+void
+_clutter_io_modules_ensure_extensions_registered (void)
+{
+  static gboolean registered_extensions = FALSE;
+  GIOExtensionPoint *ep;
+
+  G_LOCK (registered_extensions);
+
+  if (!registered_extensions)
+    {
+      registered_extensions = TRUE;
+
+      /* register the extension points we expose */
+
+      ep = g_io_extension_point_register (CLUTTER_IMAGE_LOADER_EXTENSION_POINT_NAME);
+      g_io_extension_point_set_required_type (ep, CLUTTER_TYPE_IMAGE_LOADER);
+    }
+
+  G_UNLOCK (registered_extensions);
+}
+
+void
+_clutter_io_modules_ensure_loaded (void)
+{
+  static gboolean loaded_dirs = FALSE;
+  const gchar *module_path;
+
+  _clutter_io_modules_ensure_extensions_registered ();
+
+  G_LOCK (loaded_dirs);
+
+  if (!loaded_dirs)
+    {
+      loaded_dirs = TRUE;
+
+      g_io_modules_scan_all_in_directory (CLUTTER_MODULEDIR);
+
+      module_path = g_getenv ("CLUTTER_EXTRA_MODULES");
+
+      if (module_path)
+        {
+          gchar **paths;
+          int i;
+
+          paths = g_strsplit (module_path, ":", 0);
+
+          for (i = 0; paths[i] != NULL; i++)
+            g_io_modules_scan_all_in_directory (paths[i]);
+
+          g_strfreev (paths);
+        }
+
+      /* XXX Initialize types from built-in "modules" here XXX */
+    }
+
+  G_UNLOCK (loaded_dirs);
 }
