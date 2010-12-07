@@ -108,6 +108,229 @@ clutter_image_loader_pixbuf_load_stream (ClutterImageLoader *loader,
   return (self->texture != COGL_INVALID_HANDLE);
 }
 
+#define GET_DATA_BLOCK_SIZE     (8192)
+
+typedef struct {
+  ClutterImageLoader *loader;
+  GInputStream *stream;
+  GCancellable *cancellable;
+  GAsyncReadyCallback callback;
+  gpointer user_data;
+  GdkPixbufLoader *pixbuf_loader;
+  GByteArray *content;
+  gsize pos;
+  GError *error;
+} AsyncLoadClosure;
+
+static void
+async_load_closure_free (gpointer data)
+{
+  if (data != NULL)
+    {
+      AsyncLoadClosure *closure = data;
+
+      if (closure->stream != NULL)
+        g_object_unref (closure->stream);
+
+      if (closure->cancellable != NULL)
+        g_object_unref (closure->cancellable);
+
+      if (closure->pixbuf_loader != NULL)
+        {
+          gdk_pixbuf_loader_close (closure->pixbuf_loader, NULL);
+          g_object_unref (closure->pixbuf_loader);
+        }
+
+      if (closure->error != NULL)
+        g_error_free (closure->error);
+
+      if (closure->content != NULL)
+        g_byte_array_free (closure->content, TRUE);
+
+      if (closure->loader != NULL)
+        g_object_unref (closure->loader);
+
+      g_free (closure);
+    }
+}
+
+static void
+load_stream_data_read_callback (GObject      *gobject,
+                                GAsyncResult *result,
+                                gpointer      user_data)
+{
+  GInputStream *stream = G_INPUT_STREAM (gobject);
+  AsyncLoadClosure *closure = user_data;
+  GError *error = NULL;
+  gssize read_size;
+
+  read_size = g_input_stream_read_finish (stream, result, &error);
+  if (read_size < 0)
+    {
+      if (error != NULL)
+        closure->error = error;
+      else
+        {
+          GSimpleAsyncResult *res;
+
+          CLUTTER_NOTE (MISC, "Reached EOF");
+
+          res = g_simple_async_result_new (G_OBJECT (closure->loader),
+                                           closure->callback,
+                                           closure->user_data,
+                                           _clutter_image_loader_load_stream_async);
+          g_simple_async_result_set_op_res_gpointer (res, closure,
+                                                     async_load_closure_free);
+          g_simple_async_result_complete (res);
+          g_object_unref (res);
+        }
+    }
+  else if (read_size > 0)
+    {
+      closure->pos += read_size;
+
+      CLUTTER_NOTE (MISC, "Read %d bytes", read_size);
+
+      g_byte_array_set_size (closure->content,
+                             closure->pos + GET_DATA_BLOCK_SIZE);
+
+      g_input_stream_read_async (stream, closure->content->data + closure->pos,
+                                 GET_DATA_BLOCK_SIZE,
+                                 0,
+                                 closure->cancellable,
+                                 load_stream_data_read_callback,
+                                 closure);
+    }
+  else
+    {
+      GSimpleAsyncResult *res;
+
+      CLUTTER_NOTE (MISC, "Loading finished");
+
+      res = g_simple_async_result_new (G_OBJECT (closure->loader),
+                                       closure->callback,
+                                       closure->user_data,
+                                       _clutter_image_loader_load_stream_async);
+      g_simple_async_result_set_op_res_gpointer (res, closure,
+                                                 async_load_closure_free);
+      g_simple_async_result_complete (res);
+      g_object_unref (res);
+    }
+}
+
+static void
+clutter_image_loader_pixbuf_load_stream_async (ClutterImageLoader *loader,
+                                               GInputStream       *stream,
+                                               GCancellable       *cancellable,
+                                               GAsyncReadyCallback callback,
+                                               gpointer            user_data)
+{
+  AsyncLoadClosure *closure;
+
+  closure = g_new0 (AsyncLoadClosure, 1);
+  closure->loader = g_object_ref (loader);
+  closure->stream = g_object_ref (stream);
+  closure->cancellable = cancellable != NULL
+                       ? g_object_ref (cancellable)
+                       : NULL;
+  closure->callback = callback;
+  closure->user_data = user_data;
+  closure->pixbuf_loader = gdk_pixbuf_loader_new ();
+  closure->content = g_byte_array_new ();
+  closure->pos = 0;
+
+  g_byte_array_set_size (closure->content, closure->pos + GET_DATA_BLOCK_SIZE);
+  g_input_stream_read_async (stream, closure->content->data + closure->pos,
+                             GET_DATA_BLOCK_SIZE, 0,
+                             closure->cancellable,
+                             load_stream_data_read_callback,
+                             closure);
+}
+
+static gboolean
+clutter_image_loader_pixbuf_load_stream_finish (ClutterImageLoader *loader,
+                                                GAsyncResult       *result,
+                                                GError            **error)
+{
+  ClutterImageLoaderPixbuf *self = CLUTTER_IMAGE_LOADER_PIXBUF (loader);
+  GSimpleAsyncResult *simple;
+  AsyncLoadClosure *data;
+  GError *internal_error;
+  GdkPixbuf *pixbuf;
+
+  simple = G_SIMPLE_ASYNC_RESULT (result);
+
+  if (g_simple_async_result_propagate_error (simple, error))
+    return FALSE;
+
+  g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == _clutter_image_loader_load_stream_async);
+
+  data = g_simple_async_result_get_op_res_gpointer (simple);
+  if (data->error != NULL)
+    {
+      g_propagate_error (error, data->error);
+      data->error = NULL;
+      return FALSE;
+    }
+
+  g_byte_array_set_size (data->content, data->pos + 1);
+  data->content->data[data->pos] = 0;
+  CLUTTER_NOTE (MISC, "Loaded %d bytes", data->content->len);
+
+  internal_error = NULL;
+  gdk_pixbuf_loader_write (data->pixbuf_loader,
+                           (const guchar *) data->content->data,
+                           data->content->len,
+                           &internal_error);
+  if (internal_error != NULL)
+    {
+      g_propagate_error (error, internal_error);
+      return FALSE;
+    }
+
+  CLUTTER_NOTE (MISC, "Closing GdkPixbufLoader");
+  gdk_pixbuf_loader_close (data->pixbuf_loader, &internal_error);
+  if (internal_error != NULL)
+    {
+      g_propagate_error (error, internal_error);
+      return FALSE;
+    }
+
+  CLUTTER_NOTE (MISC, "Reading GdkPixbuf");
+  pixbuf = gdk_pixbuf_loader_get_pixbuf (data->pixbuf_loader);
+  if (pixbuf == NULL)
+    return FALSE;
+
+  self->image_width = gdk_pixbuf_get_width (pixbuf);
+  self->image_height = gdk_pixbuf_get_height (pixbuf);
+  self->pixel_format = gdk_pixbuf_get_has_alpha (pixbuf)
+                     ? COGL_PIXEL_FORMAT_RGBA_8888
+                     : COGL_PIXEL_FORMAT_RGB_888;
+  self->rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+
+  CLUTTER_NOTE (MISC, "Image: %d x %d (rowstride: %d, has-alpha: %s)",
+                self->image_width,
+                self->image_height,
+                self->rowstride,
+                gdk_pixbuf_get_has_alpha (pixbuf) ? "yes" : "no");
+
+  self->texture = cogl_texture_new_from_data (self->image_width,
+                                              self->image_height,
+                                              COGL_TEXTURE_NONE,
+                                              self->pixel_format,
+                                              COGL_PIXEL_FORMAT_ANY,
+                                              self->rowstride,
+                                              gdk_pixbuf_get_pixels (pixbuf));
+
+  if (self->texture == COGL_INVALID_HANDLE &&
+      (error != NULL && *error == NULL))
+    g_set_error_literal (error, CLUTTER_IMAGE_ERROR,
+                         CLUTTER_IMAGE_ERROR_INVALID_DATA,
+                         _("Unable to load the image data"));
+
+  return (self->texture != COGL_INVALID_HANDLE);
+}
+
 static void
 clutter_image_loader_pixbuf_get_image_size (ClutterImageLoader *loader,
                                             gint               *width,
@@ -140,6 +363,8 @@ clutter_image_loader_pixbuf_class_init (ClutterImageLoaderPixbufClass *klass)
 
   loader_class->is_supported = clutter_image_loader_pixbuf_is_supported;
   loader_class->load_stream = clutter_image_loader_pixbuf_load_stream;
+  loader_class->load_stream_async = clutter_image_loader_pixbuf_load_stream_async;
+  loader_class->load_stream_finish = clutter_image_loader_pixbuf_load_stream_finish;
   loader_class->get_image_size = clutter_image_loader_pixbuf_get_image_size;
   loader_class->get_texture_handle = clutter_image_loader_pixbuf_get_texture_handle;
 }
