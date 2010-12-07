@@ -56,7 +56,8 @@ UNIT_TESTS = \
 	test-table-layout.c \
 	test-path-constraint.c \
 	test-snap-constraint.c \
-	test-rgba-content.c
+	test-rgba-content.c \
+	test-image-content.c
 
 if X11_TESTS
 UNIT_TESTS += test-pixmap.c test-devices.c
