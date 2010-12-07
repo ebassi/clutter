@@ -54,7 +54,9 @@ struct _ClutterImage
 
 /**
  * ClutterImageClass:
- * @size_changes: class handler for the #ClutterImage::size-changed signal
+ * @size_changed: class handler for the #ClutterImage::size-changed signal
+ * @image_changed: class handler for the #ClutterImage::image-changed
+ *   signal
  *
  * The <structname>ClutterImageClass</structname> structure contains only
  * private data.
@@ -71,6 +73,9 @@ struct _ClutterImageClass
                          gint          new_width,
                          gint          new_height);
 
+  void (* image_changed) (ClutterImage *image);
+
+  /*< private >*/
   void (* _clutter_image_padding1) (void);
   void (* _clutter_image_padding2) (void);
   void (* _clutter_image_padding3) (void);
@@ -78,6 +83,7 @@ struct _ClutterImageClass
   void (* _clutter_image_padding5) (void);
   void (* _clutter_image_padding6) (void);
   void (* _clutter_image_padding7) (void);
+  void (* _clutter_image_padding8) (void);
 };
 
 GQuark clutter_image_error_quark (void);
@@ -91,7 +97,6 @@ gboolean        clutter_image_load_from_data    (ClutterImage         *image,
                                                  gint                  width,
                                                  gint                  height,
                                                  gint                  rowstride,
-                                                 gint                  bpp,
                                                  GError              **error);
 
 gboolean        clutter_image_load              (ClutterImage         *image,

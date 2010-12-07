@@ -34,6 +34,7 @@ static GParamSpec *image_props[LAST_PROP] = { NULL, };
 enum
 {
   SIZE_CHANGED,
+  IMAGE_CHANGED,
 
   LAST_SIGNAL
 };
@@ -84,6 +85,11 @@ clutter_image_real_size_changed (ClutterImage *image,
 }
 
 static void
+clutter_image_real_image_changed (ClutterImage *image)
+{
+}
+
+static void
 clutter_image_get_property (GObject    *gobject,
                             guint       prop_id,
                             GValue     *value,
@@ -113,6 +119,13 @@ clutter_image_class_init (ClutterImageClass *klass)
 
   g_type_class_add_private (klass, sizeof (ClutterImagePrivate));
 
+  /**
+   * ClutterImage:width:
+   *
+   * The width of the image data, in pixels.
+   *
+   * Since: 1.6
+   */
   image_props[PROP_WIDTH] =
     g_param_spec_int ("width",
                       P_("Width"),
@@ -121,6 +134,13 @@ clutter_image_class_init (ClutterImageClass *klass)
                       0,
                       CLUTTER_PARAM_READABLE);
 
+  /**
+   * ClutterImage:height:
+   *
+   * The height of the image data, in pixels.
+   *
+   * Since: 1.6
+   */
   image_props[PROP_HEIGHT] =
     g_param_spec_int ("height",
                       P_("Height"),
@@ -135,6 +155,20 @@ clutter_image_class_init (ClutterImageClass *klass)
 
   gobject_class->dispose = clutter_image_dispose;
 
+  /**
+   * ClutterImage::size-changed:
+   * @image: a #ClutterImage
+   * @width: the width of the image data, in pixels
+   * @height: the height of the image data, in pixels
+   *
+   * The ::size-changed signal is emitted each time the size of the
+   * image data held by the #ClutterImage changes.
+   *
+   * The default implementation will automatically invalidate @image
+   * and queue a redraw.
+   *
+   * Since: 1.6
+   */
   image_signals[SIZE_CHANGED] =
     g_signal_new (I_("size-changed"),
                   G_TYPE_FROM_CLASS (klass),
@@ -146,7 +180,29 @@ clutter_image_class_init (ClutterImageClass *klass)
                   G_TYPE_INT,
                   G_TYPE_INT);
 
+  /**
+   * ClutterImage::image-changed:
+   * @image: the #ClutterImage that emitted the signal
+   *
+   * The ::image-changed signal is emitted each time the image data
+   * held by the #ClutterImage changes.
+   *
+   * The default implementation will automatically invalidate @image
+   * and queue a redraw.
+   *
+   * Since: 1.6
+   */
+  image_signals[IMAGE_CHANGED] =
+    g_signal_new (I_("image-changed"),
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (ClutterImageClass, image_changed),
+                  NULL, NULL,
+                  _clutter_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
+
   klass->size_changed = clutter_image_real_size_changed;
+  klass->image_changed = clutter_image_real_image_changed;
 }
 
 static void
@@ -158,12 +214,34 @@ clutter_image_init (ClutterImage *image)
   image->priv->material = copy_template_material ();
 }
 
+/**
+ * clutter_image_new:
+ *
+ * Creates a new, empty #ClutterImage instance.
+ *
+ * Image data should be loaded using one of the clutter_image_load* family
+ * of functions.
+ *
+ * Return value: the newly created #ClutterImage instance
+ *
+ * Since: 1.6
+ */
 ClutterImage *
 clutter_image_new (void)
 {
   return g_object_new (CLUTTER_TYPE_IMAGE, NULL);
 }
 
+/**
+ * clutter_image_get_size:
+ * @image: a #ClutterImage
+ * @width: (out): return location for the image width, or %NULL
+ * @height: (out): return location for the image height, or %NULL
+ *
+ * Retrieves the size of the image data held by @image.
+ *
+ * Since: 1.6
+ */
 void
 clutter_image_get_size (ClutterImage *image,
                         gint         *width,
@@ -178,6 +256,23 @@ clutter_image_get_size (ClutterImage *image,
     *height = image->priv->image_height;
 }
 
+/**
+ * clutter_image_load_from_data:
+ * @image: a #ClutterImage
+ * @data: image data
+ * @format: the pixel format of @data
+ * @width: the width of the image data, in pixels
+ * @height: the height of the image data, in pixels
+ * @rowstride: the distance between rows starting addresses
+ * @error: return location for a #GError, or %NULL
+ *
+ * Sets the image data from an existing array.
+ *
+ * Return value: %TRUE if the image data was successfully loaded
+ *   and %FALSE otherwise
+ *
+ * Since: 1.6
+ */
 gboolean
 clutter_image_load_from_data (ClutterImage     *image,
                               const guchar     *data,
@@ -185,11 +280,11 @@ clutter_image_load_from_data (ClutterImage     *image,
                               gint              width,
                               gint              height,
                               gint              rowstride,
-                              gint              bpp,
                               GError          **error)
 {
   ClutterImagePrivate *priv;
   CoglHandle texture;
+  gboolean width_changed, height_changed;
 
   g_return_val_if_fail (CLUTTER_IS_IMAGE (image), FALSE);
   g_return_val_if_fail (data != NULL, FALSE);
@@ -213,9 +308,62 @@ clutter_image_load_from_data (ClutterImage     *image,
   cogl_material_set_layer (priv->material, 0, texture);
   cogl_handle_unref (texture);
 
+  g_object_freeze_notify (G_OBJECT (image));
+
+  if (width != priv->image_width)
+    {
+      priv->image_width = width;
+      g_object_notify_by_pspec (G_OBJECT (image), image_props[PROP_WIDTH]);
+      width_changed = TRUE;
+    }
+  else
+    width_changed = FALSE;
+
+  if (height != priv->image_height)
+    {
+      priv->image_height = height;
+      g_object_notify_by_pspec (G_OBJECT (image), image_props[PROP_HEIGHT]);
+      height_changed = TRUE;
+    }
+  else
+    height_changed = FALSE;
+
+  g_signal_emit (image, image_signals[IMAGE_CHANGED], 0);
+
+  if (width_changed || height_changed)
+    g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
+                   priv->image_width,
+                   priv->image_height);
+
+  g_object_thaw_notify (G_OBJECT (image));
+
   return TRUE;
 }
 
+/**
+ * clutter_image_load:
+ * @image: a #ClutterImage
+ * @gfile: a #GFile
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @width: (out): return location for the width of the image, or %NULL
+ * @height: (out): return location for the height of the image, or %NULL
+ * @error: return location for a #GError, or %NULL
+ *
+ * Synchronously loads image data available to the location pointed
+ * by @gfile.
+ *
+ * This function will block the execution until the image data has
+ * been loaded, or an error was encountered.
+ *
+ * It is possible to cancel the loading by using the @cancellable
+ * instance.
+ *
+ * In case of error, the #GError structure will be filled accordingly.
+ *
+ * Return value: %TRUE if the loading was successful, and %FALSE otherwise
+ *
+ * Since: 1.6
+ */
 gboolean
 clutter_image_load (ClutterImage  *image,
                     GFile         *gfile,
@@ -229,6 +377,8 @@ clutter_image_load (ClutterImage  *image,
   GFileInputStream *stream;
   CoglHandle texture;
   gboolean res;
+  gint old_image_width, old_image_height;
+  gboolean width_changed, height_changed;
 
   g_return_val_if_fail (CLUTTER_IS_IMAGE (image), FALSE);
   g_return_val_if_fail (G_IS_FILE (gfile), FALSE);
@@ -255,6 +405,8 @@ clutter_image_load (ClutterImage  *image,
       return FALSE;
     }
 
+  old_image_width = priv->image_width;
+  old_image_height = priv->image_height;
   _clutter_image_loader_get_image_size (loader,
                                         &priv->image_width,
                                         &priv->image_height);
@@ -268,9 +420,32 @@ clutter_image_load (ClutterImage  *image,
 
   cogl_material_set_layer (priv->material, 0, texture);
 
-  g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
-                 priv->image_width,
-                 priv->image_height);
+  g_object_freeze_notify (G_OBJECT (image));
+
+  if (priv->image_width != old_image_width)
+    {
+      g_object_notify_by_pspec (G_OBJECT (image), image_props[PROP_WIDTH]);
+      width_changed = TRUE;
+    }
+  else
+    width_changed = FALSE;
+
+  if (priv->image_height != old_image_height)
+    {
+      g_object_notify_by_pspec (G_OBJECT (image), image_props[PROP_HEIGHT]);
+      height_changed = TRUE;
+    }
+  else
+    height_changed = FALSE;
+
+  g_signal_emit (image, image_signals[IMAGE_CHANGED], 0);
+
+  if (width_changed || height_changed)
+    g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
+                   priv->image_width,
+                   priv->image_height);
+
+  g_object_thaw_notify (G_OBJECT (image));
 
   if (width)
     *width = priv->image_width;
@@ -397,6 +572,23 @@ async_read_complete (GObject      *gobject,
                                            closure);
 }
 
+/**
+ * clutter_image_load_async:
+ * @image: a #ClutterImage
+ * @gfile: a #GFile
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @callback: (scope async): a callback function
+ * @user_data: closure to pass to @callback
+ *
+ * Asynchronously loads image data from the resource pointed by @gfile
+ * into @image.
+ *
+ * When the image data has been loaded the @callback function will be
+ * called; it is the responsability of the developer to call
+ * clutter_image_load_finish() inside @callback.
+ *
+ * Since: 1.6
+ */
 void
 clutter_image_load_async (ClutterImage        *image,
                           GFile               *gfile,
@@ -430,6 +622,21 @@ clutter_image_load_async (ClutterImage        *image,
                      closure);
 }
 
+/**
+ * clutter_image_load_finish:
+ * @image: a #ClutterImage
+ * @res: a #GAsyncResult
+ * @width: (out): return location for the width of the image data, or %NULL
+ * @height: (out): return location for the height of the image data, or %NULL
+ * @error: return location for a #GError, or %NULL
+ *
+ * Terminates the asynchronous loading started by clutter_image_load_async()
+ *
+ * Return value: %TRUE if the image data was loaded successfully
+ *   and %FALSE otherwise
+ *
+ * Since: 1.6
+ */
 gboolean
 clutter_image_load_finish (ClutterImage  *image,
                            GAsyncResult  *res,
@@ -441,6 +648,8 @@ clutter_image_load_finish (ClutterImage  *image,
   GSimpleAsyncResult *simple;
   ClutterImagePrivate *priv;
   CoglHandle texture;
+  gint old_image_width, old_image_height;
+  gboolean width_changed, height_changed;
 
   g_return_val_if_fail (CLUTTER_IS_IMAGE (image), FALSE);
   g_return_val_if_fail (G_IS_ASYNC_RESULT (res), FALSE);
@@ -469,6 +678,8 @@ clutter_image_load_finish (ClutterImage  *image,
 
   priv = image->priv;
 
+  old_image_width = priv->image_width;
+  old_image_height = priv->image_height;
   _clutter_image_loader_get_image_size (closure->loader,
                                         &priv->image_width,
                                         &priv->image_height);
@@ -476,9 +687,32 @@ clutter_image_load_finish (ClutterImage  *image,
   texture = _clutter_image_loader_get_texture_handle (closure->loader);
   cogl_material_set_layer (priv->material, 0, texture);
 
-  g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
-                 priv->image_width,
-                 priv->image_height);
+  g_object_freeze_notify (G_OBJECT (image));
+
+  if (priv->image_width != old_image_width)
+    {
+      g_object_notify_by_pspec (G_OBJECT (image), image_props[PROP_WIDTH]);
+      width_changed = TRUE;
+    }
+  else
+    width_changed = FALSE;
+
+  if (priv->image_height != old_image_height)
+    {
+      g_object_notify_by_pspec (G_OBJECT (image), image_props[PROP_HEIGHT]);
+      height_changed = TRUE;
+    }
+  else
+    height_changed = FALSE;
+
+  g_signal_emit (image, image_signals[IMAGE_CHANGED], 0);
+
+  if (width_changed || height_changed)
+    g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
+                   priv->image_width,
+                   priv->image_height);
+
+  g_object_thaw_notify (G_OBJECT (image));
 
   if (width)
     *width = priv->image_width;
