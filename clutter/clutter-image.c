@@ -13,8 +13,6 @@
 
 struct _ClutterImagePrivate
 {
-  ClutterImageLoader *loader;
-
   gint image_width;
   gint image_height;
 
@@ -226,6 +224,7 @@ clutter_image_load (ClutterImage  *image,
                     gint          *height,
                     GError       **error)
 {
+  ClutterImageLoader *loader;
   ClutterImagePrivate *priv;
   GFileInputStream *stream;
   CoglHandle texture;
@@ -238,21 +237,15 @@ clutter_image_load (ClutterImage  *image,
 
   priv = image->priv;
 
-  if (priv->loader == NULL)
-    {
-      priv->loader = _clutter_image_loader_new ();
-      if (priv->loader == NULL)
-        return FALSE;
-
-      CLUTTER_NOTE (MISC, "Image loader type: %s",
-                    G_OBJECT_TYPE_NAME (priv->loader));
-    }
+  loader = _clutter_image_loader_new ();
+  if (loader == NULL)
+    return FALSE;
 
   stream = g_file_read (gfile, cancellable, error);
   if (stream == NULL)
     return FALSE;
 
-  res = _clutter_image_loader_load_stream (priv->loader,
+  res = _clutter_image_loader_load_stream (loader,
                                            G_INPUT_STREAM (stream),
                                            cancellable,
                                            error);
@@ -262,11 +255,11 @@ clutter_image_load (ClutterImage  *image,
       return FALSE;
     }
 
-  _clutter_image_loader_get_image_size (priv->loader,
+  _clutter_image_loader_get_image_size (loader,
                                         &priv->image_width,
                                         &priv->image_height);
 
-  texture = _clutter_image_loader_get_texture_handle (priv->loader);
+  texture = _clutter_image_loader_get_texture_handle (loader);
   if (texture == COGL_INVALID_HANDLE)
     {
       g_object_unref (stream);
@@ -285,12 +278,123 @@ clutter_image_load (ClutterImage  *image,
   if (height)
     *height = priv->image_height;
 
-  g_object_unref (priv->loader);
-  priv->loader = NULL;
-
+  g_object_unref (loader);
   g_object_unref (stream);
 
   return TRUE;
+}
+
+typedef struct {
+  ClutterImageLoader *loader;
+  ClutterImage *image;
+  GAsyncReadyCallback callback;
+  gpointer user_data;
+  GInputStream *stream;
+  GError *error;
+  GCancellable *cancellable;
+} AsyncReadClosure;
+
+static void
+async_read_closure_free (gpointer data)
+{
+  if (data != NULL)
+    {
+      AsyncReadClosure *closure = data;
+
+      if (closure->loader != NULL)
+        g_object_unref (closure->loader);
+
+      if (closure->image != NULL)
+        g_object_unref (closure->image);
+
+      if (closure->stream != NULL)
+        g_object_unref (closure->stream);
+
+      if (closure->cancellable != NULL)
+        g_object_unref (closure->cancellable);
+
+      if (closure->error != NULL)
+        g_error_free (closure->error);
+
+      g_free (data);
+    }
+}
+
+static void
+async_load_complete (GObject      *gobject,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+  AsyncReadClosure *closure = user_data;
+  GSimpleAsyncResult *res;
+  GError *error = NULL;
+
+  CLUTTER_NOTE (MISC, "Async loading finished");
+  _clutter_image_loader_load_stream_finish (closure->loader,
+                                            result,
+                                            &error);
+  if (error)
+    closure->error = error;
+
+  res = g_simple_async_result_new (G_OBJECT (closure->image),
+                                   closure->callback,
+                                   closure->user_data,
+                                   clutter_image_load_async);
+
+  g_simple_async_result_set_op_res_gpointer (res,
+                                             closure,
+                                             async_read_closure_free);
+
+  g_simple_async_result_complete (res);
+  g_object_unref (res);
+}
+
+static void
+async_read_complete (GObject      *gobject,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+  AsyncReadClosure *closure = user_data;
+  GFileInputStream *stream;
+  GError *error = NULL;
+
+  stream = g_file_read_finish (G_FILE (gobject), result, &error);
+  if (stream == NULL)
+    {
+      GSimpleAsyncResult *res =
+        g_simple_async_result_new (G_OBJECT (closure->image),
+                                   closure->callback,
+                                   closure->user_data,
+                                   clutter_image_load_async);
+
+      if (error)
+        closure->error = error;
+
+      g_simple_async_result_set_op_res_gpointer (res,
+                                                 closure,
+                                                 async_read_closure_free);
+      g_simple_async_result_complete (res);
+      g_object_unref (res);
+      return;
+    }
+
+  if (g_cancellable_is_cancelled (closure->cancellable))
+    {
+      CLUTTER_NOTE (MISC, "Async image loading cancelled");
+      async_read_closure_free (closure);
+      return;
+    }
+
+  closure->stream = G_INPUT_STREAM (stream);
+  g_object_ref (closure->stream);
+
+  CLUTTER_NOTE (MISC, "Loading stream with '%s'",
+                G_OBJECT_TYPE_NAME (closure->loader));
+  _clutter_image_loader_load_stream_async (closure->loader,
+                                           closure->stream,
+                                           closure->cancellable,
+                                           async_load_complete,
+                                           closure);
 }
 
 void
@@ -300,10 +404,30 @@ clutter_image_load_async (ClutterImage        *image,
                           GAsyncReadyCallback  callback,
                           gpointer             user_data)
 {
+  AsyncReadClosure *closure;
+  ClutterImageLoader *loader;
+
   g_return_if_fail (CLUTTER_IS_IMAGE (image));
   g_return_if_fail (G_IS_FILE (gfile));
   g_return_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable));
   g_return_if_fail (callback != NULL);
+
+  loader = _clutter_image_loader_new ();
+  if (loader == NULL)
+    return;
+
+  closure = g_new0 (AsyncReadClosure, 1);
+  closure->loader = loader;
+  closure->image = g_object_ref (image);
+  closure->cancellable = (cancellable != NULL)
+                       ? g_object_ref (cancellable)
+                       : NULL;
+  closure->callback = callback;
+  closure->user_data = user_data;
+
+  g_file_read_async (gfile, G_PRIORITY_DEFAULT, cancellable,
+                     async_read_complete,
+                     closure);
 }
 
 gboolean
@@ -313,8 +437,54 @@ clutter_image_load_finish (ClutterImage  *image,
                            gint          *height,
                            GError       **error)
 {
+  AsyncReadClosure *closure;
+  GSimpleAsyncResult *simple;
+  ClutterImagePrivate *priv;
+  CoglHandle texture;
+
   g_return_val_if_fail (CLUTTER_IS_IMAGE (image), FALSE);
   g_return_val_if_fail (G_IS_ASYNC_RESULT (res), FALSE);
+
+  simple = G_SIMPLE_ASYNC_RESULT (res);
+
+  if (g_simple_async_result_propagate_error (simple, error))
+    return FALSE;
+
+  g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == clutter_image_load_async);
+
+  closure = g_simple_async_result_get_op_res_gpointer (simple);
+  if (closure->error != NULL)
+    {
+      if (width)
+        *width = 0;
+
+      if (height)
+        *height = 0;
+
+      g_propagate_error (error, closure->error);
+      closure->error = NULL;
+
+      return FALSE;
+    }
+
+  priv = image->priv;
+
+  _clutter_image_loader_get_image_size (closure->loader,
+                                        &priv->image_width,
+                                        &priv->image_height);
+
+  texture = _clutter_image_loader_get_texture_handle (closure->loader);
+  cogl_material_set_layer (priv->material, 0, texture);
+
+  g_signal_emit (image, image_signals[SIZE_CHANGED], 0,
+                 priv->image_width,
+                 priv->image_height);
+
+  if (width)
+    *width = priv->image_width;
+
+  if (height)
+    *height = priv->image_height;
 
   return TRUE;
 }
