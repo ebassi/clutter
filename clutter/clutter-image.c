@@ -165,6 +165,12 @@ clutter_image_real_image_changed (ClutterImage *image)
   clutter_content_invalidate (CLUTTER_CONTENT (image));
 }
 
+static CoglMaterial *
+clutter_image_real_create_material (ClutterImage *image)
+{
+  return copy_template_material ();
+}
+
 static void
 clutter_image_get_property (GObject    *gobject,
                             guint       prop_id,
@@ -279,6 +285,7 @@ clutter_image_class_init (ClutterImageClass *klass)
 
   klass->size_changed = clutter_image_real_size_changed;
   klass->image_changed = clutter_image_real_image_changed;
+  klass->create_material = clutter_image_real_create_material;
 }
 
 static void
@@ -286,8 +293,6 @@ clutter_image_init (ClutterImage *image)
 {
   image->priv = G_TYPE_INSTANCE_GET_PRIVATE (image, CLUTTER_TYPE_IMAGE,
                                              ClutterImagePrivate);
-
-  image->priv->material = copy_template_material ();
 }
 
 /**
@@ -380,6 +385,9 @@ clutter_image_load_from_data (ClutterImage     *image,
                    _("Unable to load image data"));
       return FALSE;
     }
+
+  if (priv->material == NULL)
+    priv->material = _clutter_image_create_material (image);
 
   cogl_material_set_layer (priv->material, 0, texture);
   cogl_handle_unref (texture);
@@ -498,6 +506,9 @@ clutter_image_load (ClutterImage  *image,
       g_object_unref (stream);
       return FALSE;
     }
+
+  if (priv->material == NULL)
+    priv->material = _clutter_image_create_material (image);
 
   cogl_material_set_layer (priv->material, 0, texture);
 
@@ -771,6 +782,12 @@ clutter_image_load_finish (ClutterImage  *image,
                                         &priv->image_height);
 
   texture = _clutter_image_loader_get_texture_handle (closure->loader);
+  if (texture == NULL)
+    return FALSE;
+
+  if (priv->material == NULL)
+    priv->material = _clutter_image_create_material (image);
+
   cogl_material_set_layer (priv->material, 0, texture);
 
   if (priv->texture != COGL_INVALID_HANDLE)

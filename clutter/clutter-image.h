@@ -88,6 +88,8 @@ struct _ClutterImage
  * @size_changed: class handler for the #ClutterImage::size-changed signal
  * @image_changed: class handler for the #ClutterImage::image-changed
  *   signal
+ * @create_material: virtual functions for creating the material to be
+ *   painted
  *
  * The <structname>ClutterImageClass</structname> structure contains only
  * private data.
@@ -105,6 +107,8 @@ struct _ClutterImageClass
                          gint          new_height);
 
   void (* image_changed) (ClutterImage *image);
+
+  CoglMaterial *(* create_material) (ClutterImage *image);
 
   /*< private >*/
   void (* _clutter_image_padding1) (void);
