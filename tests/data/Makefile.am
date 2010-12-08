@@ -20,6 +20,7 @@ png_files = \
 	redhand.png 		\
 	redhand_alpha.png	\
 	light0.png 		\
+	border-image.png	\
 	$(NULL)
 
 EXTRA_DIST = $(json_files) $(png_files) clutter-1.0.suppressions

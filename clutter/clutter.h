@@ -52,6 +52,7 @@
 #include "clutter-binding-pool.h"
 #include "clutter-bin-layout.h"
 #include "clutter-blur-effect.h"
+#include "clutter-border-image.h"
 #include "clutter-box.h"
 #include "clutter-box-layout.h"
 #include "clutter-cairo-texture.h"

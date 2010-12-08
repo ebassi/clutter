@@ -19,6 +19,7 @@ clutter_bind_constraint_get_type
 clutter_binding_pool_get_type
 clutter_bin_layout_get_type
 clutter_blur_effect_get_type
+clutter_border_image_get_type
 clutter_box_get_type
 clutter_box_layout_get_type
 clutter_cairo_texture_get_type

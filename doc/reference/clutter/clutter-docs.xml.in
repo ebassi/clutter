@@ -126,8 +126,9 @@
     <chapter>
       <title>Content</title>
 
-      <xi:include href="xml/clutter-image.xml"/>
       <xi:include href="xml/clutter-rgba.xml"/>
+      <xi:include href="xml/clutter-image.xml"/>
+      <xi:include href="xml/clutter-border-image.xml"/>
     </chapter>
 
   </part>

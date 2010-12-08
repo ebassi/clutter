@@ -2749,3 +2749,22 @@ CLUTTER_IS_IMAGE_LOADER_CLASS
 <SUBSECTION Private>
 clutter_image_loader_get_type
 </SECTION>
+
+<SECTION>
+<FILE>clutter-border-image</FILE>
+ClutterBorderImage
+ClutterBorderImageClass
+clutter_border_image_new
+clutter_border_image_set_slices
+clutter_border_image_get_slices
+<SUBSECTION Standard>
+CLUTTER_TYPE_BORDER_IMAGE
+CLUTTER_BORDER_IMAGE
+CLUTTER_BORDER_IMAGE_CLASS
+CLUTTER_BORDER_IMAGE_GET_CLASS
+CLUTTER_IS_BORDER_IMAGE
+CLUTTER_IS_BORDER_IMAGE_CLASS
+<SUBSECTION Private>
+ClutterBorderImagePrivate
+clutter_border_image_get_type
+</SECTION>
