@@ -22,6 +22,18 @@
  *   Emmanuele Bassi <ebassi@linux.intel.com>
  */
 
+/**
+ * SECTION:clutter-image-loader
+ * @Title: ClutterImageLoader
+ * @Short_Description: Image loading abstraction
+ *
+ * #ClutterImageLoader is a class implemented through GIO extension
+ * points. It is an opaque class that delegates the logic for loading
+ * image data synchronously and asynchronously to #ClutterImage.
+ *
+ * #ClutterImageLoader is available since Clutter 1.6
+ */
+
 #include "config.h"
 
 #include "clutter-image-loader.h"
@@ -83,6 +95,16 @@ get_default_image_loader (gpointer data)
     return (gpointer) G_TYPE_INVALID;
 }
 
+/*< private >
+ * clutter_image_loader_new:
+ *
+ * Creates a new #ClutterImageLoader instance, proxying the
+ * real instance created through GIO extension points.
+ *
+ * Return value: the newly created #ClutterImageLoader proxy
+ *
+ * Since: 1.6
+ */
 ClutterImageLoader *
 _clutter_image_loader_new (void)
 {
@@ -108,6 +130,16 @@ _clutter_image_loader_new (void)
   return loader;
 }
 
+/*< private >
+ * clutter_image_loader_get_image_size:
+ * @loader: a #ClutterImageLoader
+ * @width: (out): return location for the image width, or %NULL
+ * @height: (out): return location for the image height, or %NULL
+ *
+ * Queries the size of the loaded image.
+ *
+ * Since: 1.6
+ */
 void
 _clutter_image_loader_get_image_size (ClutterImageLoader *loader,
                                       gint               *width,
@@ -120,6 +152,17 @@ _clutter_image_loader_get_image_size (ClutterImageLoader *loader,
                                                            height);
 }
 
+/*< private >
+ * clutter_image_loader_get_texture_handle:
+ * @loader: a #ClutterImageLoader
+ *
+ * Retrieves the Cogl handle for the texture containing the loaded image.
+ *
+ * Return value: (transfer none): a pointer to the texture handle.
+ *   The #ClutterImageLoader owns the returned handle
+ *
+ * Since: 1.6
+ */
 CoglHandle
 _clutter_image_loader_get_texture_handle (ClutterImageLoader *loader)
 {
@@ -128,6 +171,19 @@ _clutter_image_loader_get_texture_handle (ClutterImageLoader *loader)
   return CLUTTER_IMAGE_LOADER_GET_CLASS (loader)->get_texture_handle (loader);
 }
 
+/*< private >
+ * clutter_image_loader_load_stream:
+ * @loader: a #ClutterImageLoader
+ * @stream: a #GInputStream
+ * @cancellable: (allow-none): a #GCancellable or %NULL
+ * @error: return location for a #GError or %NULL
+ *
+ * Synchronously loads image data from an input @stream.
+ *
+ * Return value: %TRUE if the image data was successfully loaded
+ *
+ * Since: 1.6
+ */
 gboolean
 _clutter_image_loader_load_stream (ClutterImageLoader  *loader,
                                    GInputStream        *stream,
@@ -145,6 +201,20 @@ _clutter_image_loader_load_stream (ClutterImageLoader  *loader,
                                                                error);
 }
 
+/*< private >
+ * clutter_image_loader_load_stream_async:
+ * @loader: a #ClutterImageLoader
+ * @stream: a #GInputStream
+ * @cancellable: (allow-none): a #GCancellable or %NULL
+ * @callback: (scope async): a callback
+ * @user_data: closure for @callback
+ *
+ * Starts an asynchronous load of image data from an input @stream.
+ *
+ * When done, @callback will be invoked.
+ *
+ * Since: 1.6
+ */
 void
 _clutter_image_loader_load_stream_async (ClutterImageLoader  *loader,
                                          GInputStream        *stream,
@@ -163,6 +233,21 @@ _clutter_image_loader_load_stream_async (ClutterImageLoader  *loader,
                                                               user_data);
 }
 
+/*< private >
+ * clutter_image_loader_load_stream_finish:
+ * @loader: a #ClutterImageLoader
+ * @result: a #GAsyncResult
+ * @error: return location for a #GError or %NULL
+ *
+ * Finishes the asynchronous loading started by
+ * clutter_image_loader_load_stream_async(). This function must be
+ * called in the callback function.
+ *
+ * Return value: %TRUE if the image loading was successful
+ *   and %FALSE otherwise
+ *
+ * Since: 1.6
+ */
 gboolean
 _clutter_image_loader_load_stream_finish (ClutterImageLoader  *loader,
                                           GAsyncResult        *result,

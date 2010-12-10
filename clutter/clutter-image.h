@@ -42,6 +42,13 @@ G_BEGIN_DECLS
 #define CLUTTER_IS_IMAGE_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), CLUTTER_TYPE_IMAGE))
 #define CLUTTER_IMAGE_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), CLUTTER_TYPE_IMAGE, ClutterImageClass))
 
+/**
+ * CLUTTER_IMAGE_ERROR:
+ *
+ * Error domain for #ClutterImage errors.
+ *
+ * Since: 1.6
+ */
 #define CLUTTER_IMAGE_ERROR             (clutter_image_error_quark ())
 
 typedef struct _ClutterImage            ClutterImage;

@@ -42,18 +42,44 @@ G_BEGIN_DECLS
 #define CLUTTER_IS_IMAGE_LOADER_CLASS(klass)    (G_TYPE_CHECK_CLASS_TYPE ((klass), CLUTTER_TYPE_IMAGE_LOADER))
 #define CLUTTER_IMAGE_LOADER_GET_CLASS(obj)     (G_TYPE_INSTANCE_GET_CLASS ((obj), CLUTTER_TYPE_IMAGE_LOADER, ClutterImageLoaderClass))
 
+/**
+ * CLUTTER_IMAGE_LOADER_EXTENSION_POINT_NAME:
+ *
+ * Evaluates to the extension point name that can be used by modules
+ * to provide the implementation of image loading logic.
+ *
+ * Since: 1.6
+ */
 #define CLUTTER_IMAGE_LOADER_EXTENSION_POINT_NAME       "clutter-image-loader"
 
 typedef struct _ClutterImageLoader              ClutterImageLoader;
 typedef struct _ClutterImageLoaderClass         ClutterImageLoaderClass;
 
+/**
+ * ClutterImageLoader:
+ *
+ * The <structname>ClutterImageLoader</structname> structure contains
+ * only private data and should be accessed using the provided API.
+ *
+ * Since: 1.6
+ */
 struct _ClutterImageLoader
 {
+  /*< private >*/
   GObject parent_instance;
 };
 
+/**
+ * ClutterImageLoaderClass:
+ *
+ * The <structname>ClutterImageLoaderClass</structname> structure
+ * contains only private data.
+ *
+ * Since: 1.6
+ */
 struct _ClutterImageLoaderClass
 {
+  /*< private >*/
   GObjectClass parent_class;
 
   gboolean (* is_supported) (void);

@@ -260,7 +260,7 @@ clutter_image_init (ClutterImage *image)
  * Image data should be loaded using one of the clutter_image_load* family
  * of functions.
  *
- * Return value: the newly created #ClutterImage instance
+ * Return value: (transfer full): the newly created #ClutterImage instance
  *
  * Since: 1.6
  */
