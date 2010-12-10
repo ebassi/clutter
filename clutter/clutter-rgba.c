@@ -191,14 +191,14 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
   /**
    * ClutterRGBA:red:
    *
-   * The value of the red channel.
+   * The intensity of the red channel.
    *
    * Since: 1.6
    */
   obj_props[PROP_RED] =
     g_param_spec_double ("red",
                          P_("Red"),
-                         P_("The red value"),
+                         P_("The intensity of the red channel"),
                          0.0, 1.0,
                          0.0,
                          CLUTTER_PARAM_READWRITE);
@@ -206,14 +206,14 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
   /**
    * ClutterRGBA:green:
    *
-   * The value of the green channel.
+   * The intensity of the green channel.
    *
    * Since: 1.6
    */
   obj_props[PROP_GREEN] =
     g_param_spec_double ("green",
                          P_("Green"),
-                         P_("The green value"),
+                         P_("The intensity of the green channel"),
                          0.0, 1.0,
                          0.0,
                          CLUTTER_PARAM_READWRITE);
@@ -221,14 +221,14 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
   /**
    * ClutterRGBA:blue:
    *
-   * The value of the blue channel.
+   * The intensity of the blue channel.
    *
    * Since: 1.6
    */
   obj_props[PROP_BLUE] =
     g_param_spec_double ("blue",
                          P_("Blue"),
-                         P_("The blue value"),
+                         P_("The intensity of the blue channel"),
                          0.0, 1.0,
                          0.0,
                          CLUTTER_PARAM_READWRITE);
@@ -236,14 +236,14 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
   /**
    * ClutterRGBA:alpha:
    *
-   * The value of the alpha channel.
+   * The opacity of the color.
    *
    * Since: 1.6
    */
   obj_props[PROP_ALPHA] =
     g_param_spec_double ("alpha",
                          P_("Alpha"),
-                         P_("The alpha value"),
+                         P_("The opacity of the color"),
                          0.0, 1.0,
                          0.0,
                          CLUTTER_PARAM_READWRITE);
@@ -289,10 +289,10 @@ clutter_rgba_init (ClutterRGBA *self)
 
 /**
  * clutter_rgba_new:
- * @red: the value of the red channel, between 0 and 1
- * @green: the value of the green channel, between 0 and 1
- * @blue: the value of the blue channel, between 0 and 1
- * @alpha: the value of the alpha channel, between 0 and 1
+ * @red: the intensity of the red channel, between 0 and 1
+ * @green: the intensity of the green channel, between 0 and 1
+ * @blue: the intensity of the blue channel, between 0 and 1
+ * @alpha: the opacity, between 0 and 1
  *
  * Creates a new #ClutterRGBA object for the given color. This
  * object can be used to paint a solid color inside a #ClutterActor,
@@ -354,6 +354,15 @@ clutter_rgba_new_from_string (const gchar *string)
                        NULL);
 }
 
+/**
+ * clutter_rgba_set_red:
+ * @self: a #ClutterRGBA
+ * @red: the intensity of the red channel
+ *
+ * Sets the intensity of the red channel of a #ClutterRGBA.
+ *
+ * Since: 1.6
+ */
 void
 clutter_rgba_set_red (ClutterRGBA *self,
                       gdouble      red)
@@ -370,6 +379,16 @@ clutter_rgba_set_red (ClutterRGBA *self,
   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_RED]);
 }
 
+/**
+ * clutter_rgba_get_red:
+ * @self: a #ClutterRGBA
+ *
+ * Retrieves the intensity of the red channel of a #ClutterRGBA.
+ *
+ * Return value: the intensity, between 0.0 and 1.0
+ *
+ * Since: 1.6
+ */
 gdouble
 clutter_rgba_get_red (ClutterRGBA *self)
 {
@@ -378,6 +397,15 @@ clutter_rgba_get_red (ClutterRGBA *self)
   return self->red;
 }
 
+/**
+ * clutter_rgba_set_green:
+ * @self: a #ClutterRGBA
+ * @green: the intensity of the green channel
+ *
+ * Sets the intensity of the green channel of a #ClutterRGBA.
+ *
+ * Since: 1.6
+ */
 void
 clutter_rgba_set_green (ClutterRGBA *self,
                         gdouble      green)
@@ -394,6 +422,16 @@ clutter_rgba_set_green (ClutterRGBA *self,
   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_GREEN]);
 }
 
+/**
+ * clutter_rgba_get_green:
+ * @self: a #ClutterRGBA
+ *
+ * Retrieves the intensity of the green channel of a #ClutterRGBA.
+ *
+ * Return value: the intensity, between 0.0 and 1.0
+ *
+ * Since: 1.6
+ */
 gdouble
 clutter_rgba_get_green (ClutterRGBA *self)
 {
@@ -402,6 +440,15 @@ clutter_rgba_get_green (ClutterRGBA *self)
   return self->green;
 }
 
+/**
+ * clutter_rgba_set_blue:
+ * @self: a #ClutterRGBA
+ * @blue: the intensity of the blue channel
+ *
+ * Sets the intensity of the blue channel of a #ClutterRGBA.
+ *
+ * Since: 1.6
+ */
 void
 clutter_rgba_set_blue (ClutterRGBA *self,
                        gdouble      blue)
@@ -418,6 +465,16 @@ clutter_rgba_set_blue (ClutterRGBA *self,
   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_BLUE]);
 }
 
+/**
+ * clutter_rgba_get_blue:
+ * @self: a #ClutterRGBA
+ *
+ * Retrieves the intensity of the blue channel of a #ClutterRGBA.
+ *
+ * Return value: the intensity, between 0.0 and 1.0
+ *
+ * Since: 1.6
+ */
 gdouble
 clutter_rgba_get_blue (ClutterRGBA *self)
 {
@@ -426,6 +483,15 @@ clutter_rgba_get_blue (ClutterRGBA *self)
   return self->blue;
 }
 
+/**
+ * clutter_rgba_set_alpha:
+ * @self: a #ClutterRGBA
+ * @alpha: the opacity of the color
+ *
+ * Sets the opacity of a #ClutterRGBA.
+ *
+ * Since: 1.6
+ */
 void
 clutter_rgba_set_alpha (ClutterRGBA *self,
                         gdouble      alpha)
@@ -442,6 +508,16 @@ clutter_rgba_set_alpha (ClutterRGBA *self,
   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_ALPHA]);
 }
 
+/**
+ * clutter_rgba_get_alpha:
+ * @self: a #ClutterRGBA
+ *
+ * Retrieves the opacity of a #ClutterRGBA.
+ *
+ * Return value: the opacity, between 0.0 and 1.0
+ *
+ * Since: 1.6
+ */
 gdouble
 clutter_rgba_get_alpha (ClutterRGBA *self)
 {
@@ -455,7 +531,7 @@ clutter_rgba_get_alpha (ClutterRGBA *self)
  * @self: a #ClutterRGBA
  * @color: a #ClutterColor
  *
- * Sets the color values of a #ClutterRGBA using a #ClutterColor.
+ * Sets the channels of a #ClutterRGBA using a #ClutterColor.
  *
  * Since: 1.6
  */
@@ -486,7 +562,7 @@ clutter_rgba_set_color (ClutterRGBA        *self,
  * @self: a #ClutterRGBA
  * @string: a color definition, as parseable by clutter_color_from_string()
  *
- * Sets the color values of a #ClutterRGBA using a @string definition.
+ * Sets the channels of a #ClutterRGBA using a @string definition.
  *
  * Since: 1.6
  */

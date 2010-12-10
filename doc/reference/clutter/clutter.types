@@ -27,6 +27,7 @@ clutter_click_action_get_type
 clutter_clone_get_type
 clutter_colorize_effect_get_type
 clutter_constraint_get_type
+clutter_content_get_type
 clutter_deform_effect_get_type
 clutter_desaturate_effect_get_type
 clutter_device_manager_get_type
@@ -35,6 +36,8 @@ clutter_effect_get_type
 clutter_fixed_layout_get_type
 clutter_flow_layout_get_type
 clutter_group_get_type
+clutter_image_loader_get_type
+clutter_image_get_type
 clutter_input_device_get_type
 clutter_interval_get_type
 clutter_layout_manager_get_type
@@ -48,6 +51,7 @@ clutter_page_turn_effect_get_type
 clutter_path_constraint_get_type
 clutter_path_get_type
 clutter_rectangle_get_type
+clutter_rgba_get_type
 clutter_score_get_type
 clutter_scriptable_get_type
 clutter_script_get_type

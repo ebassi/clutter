@@ -54,7 +54,7 @@ test_rgba_content_main (int   argc,
       last_x = PADDING + SPACING;
       for (j = 0; j < n_cols; j++)
         {
-          ClutterActor *rect = g_object_new (CLUTTER_TYPE_ACTOR, NULL);
+          ClutterActor *rect = clutter_actor_new ();
 
           clutter_actor_set_position (rect, last_x, last_y);
           clutter_actor_set_size (rect, RECT_SIZE, RECT_SIZE);

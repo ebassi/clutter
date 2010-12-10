@@ -279,6 +279,7 @@ CLUTTER_CALLBACK
 ClutterCallback
 ClutterActor
 ClutterActorClass
+clutter_actor_new
 clutter_actor_set_flags
 clutter_actor_unset_flags
 clutter_actor_get_flags
@@ -298,6 +299,8 @@ clutter_actor_event
 clutter_actor_should_pick_paint
 clutter_actor_map
 clutter_actor_unmap
+clutter_actor_set_content
+clutter_actor_get_content
 
 <SUBSECTION>
 ClutterAllocationFlags
@@ -2658,4 +2661,91 @@ CLUTTER_TYPE_SNAP_CONSTRAINT
 <SUBSECTION Private>
 ClutterSnapConstraintClass
 clutter_snap_constraint_get_type
+</SECTION>
+
+<SECTION>
+<FILE>clutter-content</FILE>
+ClutterContent
+ClutterContentIface
+clutter_content_apply_mask
+clutter_content_paint_content
+clutter_content_get_paint_volume
+clutter_content_invalidate
+<SUBSECTION Standard>
+CLUTTER_TYPE_CONTENT
+CLUTTER_CONTENT
+CLUTTER_IS_CONTENT
+CLUTTER_CONTENT_GET_IFACE
+<SUBSECTION Private>
+clutter_content_get_type
+</SECTION>
+
+<SECTION>
+<FILE>clutter-rgba</FILE>
+ClutterRGBA
+clutter_rgba_new
+clutter_rgba_new_from_color
+clutter_rgba_new_from_string
+<SUBSECTION>
+clutter_rgba_set_red
+clutter_rgba_get_red
+clutter_rgba_set_green
+clutter_rgba_get_green
+clutter_rgba_set_blue
+clutter_rgba_get_blue
+clutter_rgba_set_alpha
+clutter_rgba_get_alpha
+<SUBSECTION>
+clutter_rgba_set_color
+clutter_rgba_set_string
+<SUBSECTION Standard>
+CLUTTER_TYPE_RGBA
+CLUTTER_RGBA
+CLUTTER_IS_RGBA
+<SUBSECTION Private>
+clutter_rgba_get_type
+</SECTION>
+
+<SECTION>
+<FILE>clutter-image</FILE>
+ClutterImage
+ClutterImageClass
+clutter_image_new
+<SUBSECTION>
+clutter_image_load_from_data
+clutter_image_load
+clutter_image_load_async
+clutter_image_load_finish
+<SUBSECTION>
+clutter_image_get_size
+<SUBSECTION>
+ClutterImageError
+CLUTTER_IMAGE_ERROR
+<SUBSECTION Standard>
+CLUTTER_TYPE_IMAGE
+CLUTTER_IMAGE
+CLUTTER_IMAGE_CLASS
+CLUTTER_IS_IMAGE
+CLUTTER_IS_IMAGE_CLASS
+CLUTTER_IMAGE_GET_CLASS
+<SUBSECTION Private>
+ClutterImagePrivate
+clutter_image_get_type
+clutter_image_error_quark
+</SECTION>
+
+<SECTION>
+<FILE>clutter-image-loader</FILE>
+ClutterImageLoader
+ClutterImageLoaderClass
+CLUTTER_IMAGE_LOADER_EXTENSION_POINT_NAME
+<SUBSECTION Standard>
+CLUTTER_TYPE_IMAGE_LOADER
+CLUTTER_IMAGE_LOADER
+CLUTTER_IMAGE_LOADER_CLASS
+CLUTTER_IMAGE_LOADER_GET_CLASS
+CLUTTER_IS_IMAGE_LOADER
+CLUTTER_IS_IMAGE_LOADER_CLASS
+<SUBSECTION Private>
+clutter_image_loader_get_type
 </SECTION>

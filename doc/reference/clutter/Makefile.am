@@ -96,6 +96,7 @@ IGNORE_HFILES=\
 	egl 				\
 	evdev				\
 	glx 				\
+	image-loaders			\
 	osx 				\
 	x11 				\
 	wayland				\
