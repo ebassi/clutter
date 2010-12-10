@@ -33,6 +33,9 @@
  * a #GFile to synchronously and asynchronously load the image data
  * through GIO.
  *
+ * #ClutterImage implements the #ClutterContent interface, and it
+ * can be assigned to any actor using clutter_actor_set_content().
+ *
  * #ClutterImage is available since Clutter 1.6
  */
 
@@ -44,6 +47,7 @@
 
 #include "clutter-image.h"
 
+#include "clutter-content-private.h"
 #include "clutter-debug.h"
 #include "clutter-image-loader.h"
 #include "clutter-marshal.h"
@@ -82,7 +86,11 @@ static guint image_signals[LAST_SIGNAL] = { 0, };
 
 static CoglMaterial *image_template_material = NULL;
 
-G_DEFINE_TYPE (ClutterImage, clutter_image, G_TYPE_OBJECT);
+static void clutter_content_iface_init (ClutterContentIface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (ClutterImage, clutter_image, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (CLUTTER_TYPE_CONTENT,
+                                                clutter_content_iface_init));
 
 static CoglMaterial *
 copy_template_material (void)
@@ -100,6 +108,32 @@ copy_template_material (void)
     }
 
   return cogl_material_copy (image_template_material);
+}
+
+static CoglMaterial *
+_clutter_image_create_material (ClutterImage *image)
+{
+  return CLUTTER_IMAGE_GET_CLASS (image)->create_material (image);
+}
+
+static gboolean
+clutter_image_setup_material (ClutterContent *content,
+                              ClutterActor   *actor)
+{
+  ClutterImagePrivate *priv = CLUTTER_IMAGE (content)->priv;
+
+  if (priv->material == NULL)
+    return FALSE;
+
+  cogl_set_source (priv->material);
+
+  return TRUE;
+}
+
+static void
+clutter_content_iface_init (ClutterContentIface *iface)
+{
+  iface->setup_material = clutter_image_setup_material;
 }
 
 static void
@@ -122,11 +156,13 @@ clutter_image_real_size_changed (ClutterImage *image,
                                  gint          width,
                                  gint          height)
 {
+  clutter_content_invalidate (CLUTTER_CONTENT (image));
 }
 
 static void
 clutter_image_real_image_changed (ClutterImage *image)
 {
+  clutter_content_invalidate (CLUTTER_CONTENT (image));
 }
 
 static void
