@@ -151,6 +151,8 @@ void            clutter_image_get_size          (ClutterImage         *image,
                                                  gint                 *width,
                                                  gint                 *height);
 
+CoglHandle      clutter_image_get_cogl_texture  (ClutterImage         *image);
+
 G_END_DECLS
 
 #endif /* __CLUTTER_IMAGE_H__ */

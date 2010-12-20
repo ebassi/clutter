@@ -29,6 +29,7 @@ image_sync_loading (void)
   g_assert (res);
   g_assert_cmpint (width, >, 0);
   g_assert_cmpint (height, >, 0);
+  g_assert (clutter_image_get_cogl_texture (image) != COGL_INVALID_HANDLE);
 
   g_object_unref (gfile);
   g_object_unref (image);
@@ -39,13 +40,14 @@ async_load_done_cb (GObject      *gobject,
                     GAsyncResult *result,
                     gpointer      user_data)
 {
+  ClutterImage *image = CLUTTER_IMAGE (gobject);
   GMainLoop *main_loop = user_data;
   GError *error = NULL;
   gint width, height;
   gboolean res;
 
   width = height = 0;
-  res = clutter_image_load_finish (CLUTTER_IMAGE (gobject), result,
+  res = clutter_image_load_finish (image, result,
                                    &width,
                                    &height,
                                    &error);
@@ -57,6 +59,7 @@ async_load_done_cb (GObject      *gobject,
   g_assert (error == NULL);
   g_assert_cmpint (width, >, 0);
   g_assert_cmpint (height, >, 0);
+  g_assert (clutter_image_get_cogl_texture (image) != COGL_INVALID_HANDLE);
 
   g_main_loop_quit (main_loop);
 }

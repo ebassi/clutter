@@ -55,6 +55,7 @@ struct _ClutterImagePrivate
   gint image_height;
 
   CoglMaterial *material;
+  CoglHandle texture;
 };
 
 enum
@@ -110,6 +111,7 @@ clutter_image_dispose (GObject *gobject)
     {
       cogl_object_unref (priv->material);
       priv->material = NULL;
+      priv->texture = NULL;
     }
 
   G_OBJECT_CLASS (clutter_image_parent_class)->dispose (gobject);
@@ -346,6 +348,11 @@ clutter_image_load_from_data (ClutterImage     *image,
   cogl_material_set_layer (priv->material, 0, texture);
   cogl_handle_unref (texture);
 
+  if (priv->texture != COGL_INVALID_HANDLE)
+    cogl_handle_unref (priv->texture);
+
+  priv->texture = texture;
+
   g_object_freeze_notify (G_OBJECT (image));
 
   if (width != priv->image_width)
@@ -457,6 +464,11 @@ clutter_image_load (ClutterImage  *image,
     }
 
   cogl_material_set_layer (priv->material, 0, texture);
+
+  if (priv->texture != COGL_INVALID_HANDLE)
+    cogl_handle_unref (priv->texture);
+
+  priv->texture = texture;
 
   g_object_freeze_notify (G_OBJECT (image));
 
@@ -725,6 +737,11 @@ clutter_image_load_finish (ClutterImage  *image,
   texture = _clutter_image_loader_get_texture_handle (closure->loader);
   cogl_material_set_layer (priv->material, 0, texture);
 
+  if (priv->texture != COGL_INVALID_HANDLE)
+    cogl_handle_unref (priv->texture);
+
+  priv->texture = texture;
+
   g_object_freeze_notify (G_OBJECT (image));
 
   if (priv->image_width != old_image_width)
@@ -765,4 +782,24 @@ GQuark
 clutter_image_error_quark (void)
 {
   return g_quark_from_static_string ("clutter-image-error-quark");
+}
+
+/**
+ * clutter_image_get_cogl_texture:
+ * @image: a #ClutterImage
+ *
+ * Retrieves the pointer to the Cogl texture containing the data
+ * loaded by @image.
+ *
+ * Return value: (transfer none): a pointer to a Cogl texture handle,
+ *   or %NULL
+ *
+ * Since: 1.6
+ */
+CoglHandle
+clutter_image_get_cogl_texture (ClutterImage *image)
+{
+  g_return_val_if_fail (CLUTTER_IS_IMAGE (image), NULL);
+
+  return image->priv->texture;
 }
