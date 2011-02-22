@@ -3137,7 +3137,7 @@ _clutter_io_modules_ensure_loaded (void)
 
   if (!loaded_dirs)
     {
-      volatile GType dummy_type;
+      volatile GType dummy_type G_GNUC_UNUSED;
 
       loaded_dirs = TRUE;
 
