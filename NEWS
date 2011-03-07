@@ -1,3 +1,39 @@
+Clutter 1.6.8                                                        2011-03-07
+===============================================================================
+
+  • List of changes since Clutter 1.6.6
+
+    » Documentation fixes.
+
+    » Let ClutterBox report its paint volume.
+
+    » Add an "Effects" chapter to the Clutter Cookbook.
+
+    » Queue a redraw and/or a relayout whenever a ClutterActorMeta that
+      changes the appearances or the allocation of an actor is enabled
+      or disabled.
+
+    » Fix the error reporting of the initialization sequence; this change
+      makes Clutter abort early and with a meaningful message on backend
+      initialization errors, instead going ahead and printing less than
+      useful error messages.
+
+    » Disable blending when using a texture render during a blit.
+
+    » Fix handling of opacity when using an OffscreenEffect.
+
+    » Tune the point-in-poly checks for the software-based picking.
+
+  • List of bugs fixed since Clutter 1.6.6
+
+    #2541 - ClutterOffscreenEffect will multiply the actor's opacity twice
+    #2589 - clutter-box does not set default paint volume
+    #2598 - clutter_init() return value useless
+
+Many thanks to:
+
+  Dioselin, Elliot Smith, Neil Roberts, nobled
+
 Clutter 1.6.6                                                        2011-02-21
 ===============================================================================
 
