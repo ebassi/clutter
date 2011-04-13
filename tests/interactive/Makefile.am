@@ -58,7 +58,8 @@ UNIT_TESTS = \
 	test-snap-constraint.c \
 	test-rgba-content.c \
 	test-image-content.c \
-	test-border-image.c
+	test-border-image.c \
+	test-drawing-area.c
 
 if X11_TESTS
 UNIT_TESTS += test-pixmap.c test-devices.c

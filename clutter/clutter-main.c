@@ -91,9 +91,11 @@
 #endif
 
 #include <stdlib.h>
-#include <glib/gi18n-lib.h>
-#include <gio/gio.h>
 #include <locale.h>
+
+#include <glib/gi18n-lib.h>
+
+#include <gio/gio.h>
 
 #include "clutter-actor.h"
 #include "clutter-backend-private.h"
@@ -1774,6 +1776,18 @@ _clutter_boolean_handled_accumulator (GSignalInvocationHint *ihint,
   continue_emission = !signal_handled;
 
   return continue_emission;
+}
+
+gboolean
+_clutter_create_surface_accumulator (GSignalInvocationHint *ihint,
+                                     GValue                *return_accu,
+                                     const GValue          *handler_return,
+                                     gpointer               data)
+{
+  g_value_copy (handler_return, return_accu);
+
+  /* stop on the first non-NULL return value */
+  return g_value_get_boxed (handler_return) == NULL;
 }
 
 static void

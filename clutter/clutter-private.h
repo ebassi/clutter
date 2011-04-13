@@ -88,6 +88,15 @@ typedef struct _ClutterMainContext      ClutterMainContext;
 #define P_(String) (String)
 #endif
 
+/* Cairo stores the data in native byte order as ARGB but Cogl's pixel
+   formats specify the actual byte order. Therefore we need to use a
+   different format depending on the architecture */
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define CLUTTER_CAIRO_PIXEL_FORMAT      (COGL_PIXEL_FORMAT_BGRA_8888_PRE)
+#else
+#define CLUTTER_CAIRO_PIXEL_FORMAT      (COGL_PIXEL_FORMAT_ARGB_8888_PRE)
+#endif
+
 typedef enum {
   CLUTTER_ACTOR_UNUSED_FLAG = 0,
 
@@ -211,6 +220,10 @@ gboolean _clutter_boolean_handled_accumulator (GSignalInvocationHint *ihint,
                                                GValue                *return_accu,
                                                const GValue          *handler_return,
                                                gpointer               dummy);
+gboolean _clutter_create_surface_accumulator (GSignalInvocationHint *ihint,
+                                              GValue                *return_accu,
+                                              const GValue          *handler_return,
+                                              gpointer               dummy);
 
 void _clutter_run_repaint_functions (void);
 
