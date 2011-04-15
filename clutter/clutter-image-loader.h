@@ -48,7 +48,7 @@ G_BEGIN_DECLS
  * Evaluates to the extension point name that can be used by modules
  * to provide the implementation of image loading logic.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 #define CLUTTER_IMAGE_LOADER_EXTENSION_POINT_NAME       "clutter-image-loader"
 
@@ -61,7 +61,7 @@ typedef struct _ClutterImageLoaderClass         ClutterImageLoaderClass;
  * The <structname>ClutterImageLoader</structname> structure contains
  * only private data and should be accessed using the provided API.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 struct _ClutterImageLoader
 {
@@ -75,7 +75,7 @@ struct _ClutterImageLoader
  * The <structname>ClutterImageLoaderClass</structname> structure
  * contains only private data.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 struct _ClutterImageLoaderClass
 {

@@ -31,7 +31,7 @@
  * points. It is an opaque class that delegates the logic for loading
  * image data synchronously and asynchronously to #ClutterImage.
  *
- * #ClutterImageLoader is available since Clutter 1.6
+ * #ClutterImageLoader is available since Clutter 1.8
  */
 
 #include "config.h"
@@ -103,7 +103,7 @@ get_default_image_loader (gpointer data)
  *
  * Return value: the newly created #ClutterImageLoader proxy
  *
- * Since: 1.6
+ * Since: 1.8
  */
 ClutterImageLoader *
 _clutter_image_loader_new (void)
@@ -138,7 +138,7 @@ _clutter_image_loader_new (void)
  *
  * Queries the size of the loaded image.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 _clutter_image_loader_get_image_size (ClutterImageLoader *loader,
@@ -161,7 +161,7 @@ _clutter_image_loader_get_image_size (ClutterImageLoader *loader,
  * Return value: (transfer none): a pointer to the texture handle.
  *   The #ClutterImageLoader owns the returned handle
  *
- * Since: 1.6
+ * Since: 1.8
  */
 CoglHandle
 _clutter_image_loader_get_texture_handle (ClutterImageLoader *loader)
@@ -182,7 +182,7 @@ _clutter_image_loader_get_texture_handle (ClutterImageLoader *loader)
  *
  * Return value: %TRUE if the image data was successfully loaded
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gboolean
 _clutter_image_loader_load_stream (ClutterImageLoader  *loader,
@@ -213,7 +213,7 @@ _clutter_image_loader_load_stream (ClutterImageLoader  *loader,
  *
  * When done, @callback will be invoked.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 _clutter_image_loader_load_stream_async (ClutterImageLoader  *loader,
@@ -246,7 +246,7 @@ _clutter_image_loader_load_stream_async (ClutterImageLoader  *loader,
  * Return value: %TRUE if the image loading was successful
  *   and %FALSE otherwise
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gboolean
 _clutter_image_loader_load_stream_finish (ClutterImageLoader  *loader,

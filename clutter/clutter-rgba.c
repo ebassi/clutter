@@ -31,7 +31,7 @@
  * can be used to paint a solid color covering the same area as the allocation
  * of the #ClutterActor<!-- -->s that use it as their content.
  *
- * #ClutterRGBA is available since Clutter 1.6.
+ * #ClutterRGBA is available since Clutter 1.8.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -193,7 +193,7 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
    *
    * The intensity of the red channel.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   obj_props[PROP_RED] =
     g_param_spec_double ("red",
@@ -208,7 +208,7 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
    *
    * The intensity of the green channel.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   obj_props[PROP_GREEN] =
     g_param_spec_double ("green",
@@ -223,7 +223,7 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
    *
    * The intensity of the blue channel.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   obj_props[PROP_BLUE] =
     g_param_spec_double ("blue",
@@ -238,7 +238,7 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
    *
    * The opacity of the color.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   obj_props[PROP_ALPHA] =
     g_param_spec_double ("alpha",
@@ -253,7 +253,7 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
    *
    * Sets all the channels of a #ClutterRGBA using a #ClutterColor.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   obj_props[PROP_COLOR] =
     clutter_param_spec_color ("color",
@@ -268,7 +268,7 @@ clutter_rgba_class_init (ClutterRGBAClass *klass)
    * Sets all the channels of a #ClutterRGBA using a string that
    * can be parsed by clutter_color_from_string().
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   obj_props[PROP_STRING] =
     g_param_spec_string ("string",
@@ -300,7 +300,7 @@ clutter_rgba_init (ClutterRGBA *self)
  *
  * Return value: (transfer full): the newly created #ClutterRGBA instance.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 ClutterContent *
 clutter_rgba_new (gdouble red,
@@ -325,7 +325,7 @@ clutter_rgba_new (gdouble red,
  *
  * Return value: (transfer full): the newly created #ClutterRGBA instance.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 ClutterContent *
 clutter_rgba_new_from_color (const ClutterColor *color)
@@ -344,7 +344,7 @@ clutter_rgba_new_from_color (const ClutterColor *color)
  *
  * Return value: (transfer full): the newly created #ClutterRGBA instance
  *
- * Since: 1.6
+ * Since: 1.8
  */
 ClutterContent *
 clutter_rgba_new_from_string (const gchar *string)
@@ -361,7 +361,7 @@ clutter_rgba_new_from_string (const gchar *string)
  *
  * Sets the intensity of the red channel of a #ClutterRGBA.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_rgba_set_red (ClutterRGBA *self,
@@ -387,7 +387,7 @@ clutter_rgba_set_red (ClutterRGBA *self,
  *
  * Return value: the intensity, between 0.0 and 1.0
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gdouble
 clutter_rgba_get_red (ClutterRGBA *self)
@@ -404,7 +404,7 @@ clutter_rgba_get_red (ClutterRGBA *self)
  *
  * Sets the intensity of the green channel of a #ClutterRGBA.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_rgba_set_green (ClutterRGBA *self,
@@ -430,7 +430,7 @@ clutter_rgba_set_green (ClutterRGBA *self,
  *
  * Return value: the intensity, between 0.0 and 1.0
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gdouble
 clutter_rgba_get_green (ClutterRGBA *self)
@@ -447,7 +447,7 @@ clutter_rgba_get_green (ClutterRGBA *self)
  *
  * Sets the intensity of the blue channel of a #ClutterRGBA.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_rgba_set_blue (ClutterRGBA *self,
@@ -473,7 +473,7 @@ clutter_rgba_set_blue (ClutterRGBA *self,
  *
  * Return value: the intensity, between 0.0 and 1.0
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gdouble
 clutter_rgba_get_blue (ClutterRGBA *self)
@@ -490,7 +490,7 @@ clutter_rgba_get_blue (ClutterRGBA *self)
  *
  * Sets the opacity of a #ClutterRGBA.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_rgba_set_alpha (ClutterRGBA *self,
@@ -516,7 +516,7 @@ clutter_rgba_set_alpha (ClutterRGBA *self,
  *
  * Return value: the opacity, between 0.0 and 1.0
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gdouble
 clutter_rgba_get_alpha (ClutterRGBA *self)
@@ -533,7 +533,7 @@ clutter_rgba_get_alpha (ClutterRGBA *self)
  *
  * Sets the channels of a #ClutterRGBA using a #ClutterColor.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_rgba_set_color (ClutterRGBA        *self,
@@ -564,7 +564,7 @@ clutter_rgba_set_color (ClutterRGBA        *self,
  *
  * Sets the channels of a #ClutterRGBA using a @string definition.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_rgba_set_string (ClutterRGBA *self,

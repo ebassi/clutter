@@ -36,7 +36,7 @@
  * #ClutterImage implements the #ClutterContent interface, and it
  * can be assigned to any actor using clutter_actor_set_content().
  *
- * #ClutterImage is available since Clutter 1.6
+ * #ClutterImage is available since Clutter 1.8
  */
 
 #ifdef HAVE_CONFIG_H
@@ -206,7 +206,7 @@ clutter_image_class_init (ClutterImageClass *klass)
    *
    * The width of the image data, in pixels.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   image_props[PROP_WIDTH] =
     g_param_spec_int ("width",
@@ -221,7 +221,7 @@ clutter_image_class_init (ClutterImageClass *klass)
    *
    * The height of the image data, in pixels.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   image_props[PROP_HEIGHT] =
     g_param_spec_int ("height",
@@ -249,7 +249,7 @@ clutter_image_class_init (ClutterImageClass *klass)
    * The default implementation will automatically invalidate @image
    * and queue a redraw.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   image_signals[SIZE_CHANGED] =
     g_signal_new (I_("size-changed"),
@@ -272,7 +272,7 @@ clutter_image_class_init (ClutterImageClass *klass)
    * The default implementation will automatically invalidate @image
    * and queue a redraw.
    *
-   * Since: 1.6
+   * Since: 1.8
    */
   image_signals[IMAGE_CHANGED] =
     g_signal_new (I_("image-changed"),
@@ -305,7 +305,7 @@ clutter_image_init (ClutterImage *image)
  *
  * Return value: (transfer full): the newly created #ClutterImage instance
  *
- * Since: 1.6
+ * Since: 1.8
  */
 ClutterImage *
 clutter_image_new (void)
@@ -321,7 +321,7 @@ clutter_image_new (void)
  *
  * Retrieves the size of the image data held by @image.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_image_get_size (ClutterImage *image,
@@ -352,7 +352,7 @@ clutter_image_get_size (ClutterImage *image,
  * Return value: %TRUE if the image data was successfully loaded
  *   and %FALSE otherwise
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gboolean
 clutter_image_load_from_data (ClutterImage     *image,
@@ -451,7 +451,7 @@ clutter_image_load_from_data (ClutterImage     *image,
  *
  * Return value: %TRUE if the loading was successful, and %FALSE otherwise
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gboolean
 clutter_image_load (ClutterImage  *image,
@@ -684,7 +684,7 @@ async_read_complete (GObject      *gobject,
  * called; it is the responsability of the developer to call
  * clutter_image_load_finish() inside @callback.
  *
- * Since: 1.6
+ * Since: 1.8
  */
 void
 clutter_image_load_async (ClutterImage        *image,
@@ -732,7 +732,7 @@ clutter_image_load_async (ClutterImage        *image,
  * Return value: %TRUE if the image data was loaded successfully
  *   and %FALSE otherwise
  *
- * Since: 1.6
+ * Since: 1.8
  */
 gboolean
 clutter_image_load_finish (ClutterImage  *image,
@@ -847,7 +847,7 @@ clutter_image_error_quark (void)
  * Return value: (transfer none): a pointer to a Cogl texture handle,
  *   or %NULL
  *
- * Since: 1.6
+ * Since: 1.8
  */
 CoglHandle
 clutter_image_get_cogl_texture (ClutterImage *image)
