@@ -542,6 +542,22 @@ typedef enum {
   CLUTTER_MODIFIER_MASK = 0x5c001fff
 } ClutterModifierType;
 
+/**
+ * ClutterImageLoadFlags:
+ * @CLUTTER_IMAGE_LOAD_NONE: No flags
+ * @CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT: Preserve the aspect ratio of the
+ *   image when loading with a predefined size
+ *
+ * Flags to be passed to the image loading functions.
+ *
+ * Since: 1.8
+ */
+typedef enum {
+  CLUTTER_IMAGE_LOAD_NONE = 0,
+
+  CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT = 1 << 0
+} ClutterImageLoadFlags;
+
 G_END_DECLS
 
 #endif /* __CLUTTER_TYPES_H__ */

@@ -32,6 +32,7 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 #include <cogl/cogl.h>
+#include <clutter/clutter-types.h>
 
 G_BEGIN_DECLS
 
@@ -54,22 +55,6 @@ G_BEGIN_DECLS
 
 typedef struct _ClutterImageLoader              ClutterImageLoader;
 typedef struct _ClutterImageLoaderClass         ClutterImageLoaderClass;
-
-/**
- * ClutterImageLoadFlags:
- * @CLUTTER_IMAGE_LOAD_NONE: No flags
- * @CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT: Preserve the aspect ratio of the
- *   image when loading with a predefined size
- *
- * Flags to be passed to the image loading functions.
- *
- * Since: 1.8
- */
-typedef enum {
-  CLUTTER_IMAGE_LOAD_NONE = 0,
-
-  CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT = 1 << 0
-} ClutterImageLoadFlags;
 
 /**
  * ClutterImageLoader:
