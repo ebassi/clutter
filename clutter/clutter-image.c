@@ -666,6 +666,8 @@ async_read_complete (GObject      *gobject,
                 G_OBJECT_TYPE_NAME (closure->loader));
   _clutter_image_loader_load_stream_async (closure->loader,
                                            closure->stream,
+                                           -1, -1,
+                                           CLUTTER_IMAGE_LOAD_NONE,
                                            closure->cancellable,
                                            async_load_complete,
                                            closure);

@@ -219,6 +219,9 @@ _clutter_image_loader_load_stream (ClutterImageLoader     *loader,
  * clutter_image_loader_load_stream_async:
  * @loader: a #ClutterImageLoader
  * @stream: a #GInputStream
+ * @width: the width of the image, or -1
+ * @height: the height of the image, or -1
+ * @flags: flags to pass to the image loader
  * @cancellable: (allow-none): a #GCancellable or %NULL
  * @callback: (scope async): a callback
  * @user_data: closure for @callback
@@ -230,11 +233,14 @@ _clutter_image_loader_load_stream (ClutterImageLoader     *loader,
  * Since: 1.8
  */
 void
-_clutter_image_loader_load_stream_async (ClutterImageLoader  *loader,
-                                         GInputStream        *stream,
-                                         GCancellable        *cancellable,
-                                         GAsyncReadyCallback  callback,
-                                         gpointer             user_data)
+_clutter_image_loader_load_stream_async (ClutterImageLoader    *loader,
+                                         GInputStream          *stream,
+                                         gint                   width,
+                                         gint                   height,
+                                         ClutterImageLoadFlags  flags,
+                                         GCancellable          *cancellable,
+                                         GAsyncReadyCallback    callback,
+                                         gpointer               user_data)
 {
   g_return_if_fail (CLUTTER_IS_IMAGE_LOADER (loader));
   g_return_if_fail (G_IS_INPUT_STREAM (stream));
@@ -242,6 +248,8 @@ _clutter_image_loader_load_stream_async (ClutterImageLoader  *loader,
   g_return_if_fail (callback != NULL);
 
   CLUTTER_IMAGE_LOADER_GET_CLASS (loader)->load_stream_async (loader, stream,
+                                                              width, height,
+                                                              flags,
                                                               cancellable,
                                                               callback,
                                                               user_data);

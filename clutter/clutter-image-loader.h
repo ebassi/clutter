@@ -110,6 +110,9 @@ struct _ClutterImageLoaderClass
 
   void       (* load_stream_async)  (ClutterImageLoader     *loader,
                                      GInputStream           *stream,
+                                     gint                    width,
+                                     gint                    height,
+                                     ClutterImageLoadFlags   flags,
                                      GCancellable           *cancellable,
                                      GAsyncReadyCallback     callback,
                                      gpointer                user_data);
@@ -161,6 +164,9 @@ gboolean                _clutter_image_loader_load_stream               (Clutter
 
 void                    _clutter_image_loader_load_stream_async         (ClutterImageLoader     *loader,
                                                                          GInputStream           *stream,
+                                                                         gint                    width,
+                                                                         gint                    height,
+                                                                         ClutterImageLoadFlags   flags,
                                                                          GCancellable           *cancellable,
                                                                          GAsyncReadyCallback     callback,
                                                                          gpointer                user_data);

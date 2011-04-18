@@ -158,6 +158,9 @@ typedef struct {
   GByteArray *content;
   gsize pos;
   GError *error;
+  gint width;
+  gint height;
+  guint preserve_aspect_ratio : 1;
 } AsyncLoadClosure;
 
 static void
@@ -190,6 +193,55 @@ async_load_closure_free (gpointer data)
 
       g_free (closure);
     }
+}
+
+static void
+on_loader_size_prepared (GdkPixbufLoader  *loader,
+                         gint              width,
+                         gint              height,
+                         AsyncLoadClosure *closure)
+{
+  if (closure->preserve_aspect_ratio)
+    {
+      if (closure->width > 0 || closure->height > 0)
+        {
+          if (closure->width < 0)
+            {
+              width = width * (double) closure->height / (double) height;
+              height = closure->height;
+            }
+          else if (closure->height < 0)
+            {
+              height = height * (double) closure->width / (double) width;
+              width = closure->width;
+            }
+          else if (((double) height * closure->width) > ((double) width * closure->height))
+            {
+              width = 0.5
+                    + (double) width * (double) closure->height / height;
+              height = closure->height;
+            }
+          else
+            {
+              height = 0.5
+                     + (double) height * (double) closure->width / width;
+              width = closure->width;
+            }
+        }
+    }
+  else
+    {
+      if (closure->width > 0)
+        width = closure->width;
+
+      if (closure->height > 0)
+        height = closure->height;
+    }
+
+  width = MAX (width, 1);
+  height = MAX (height, 1);
+
+  gdk_pixbuf_loader_set_size (loader, width, height);
 }
 
 static void
@@ -257,17 +309,24 @@ load_stream_data_read_callback (GObject      *gobject,
 }
 
 static void
-clutter_image_loader_pixbuf_load_stream_async (ClutterImageLoader *loader,
-                                               GInputStream       *stream,
-                                               GCancellable       *cancellable,
-                                               GAsyncReadyCallback callback,
-                                               gpointer            user_data)
+clutter_image_loader_pixbuf_load_stream_async (ClutterImageLoader    *loader,
+                                               GInputStream          *stream,
+                                               gint                   width,
+                                               gint                   height,
+                                               ClutterImageLoadFlags  flags,
+                                               GCancellable          *cancellable,
+                                               GAsyncReadyCallback    callback,
+                                               gpointer               user_data)
 {
   AsyncLoadClosure *closure;
 
   closure = g_new0 (AsyncLoadClosure, 1);
   closure->loader = g_object_ref (loader);
   closure->stream = g_object_ref (stream);
+  closure->width = width;
+  closure->height = height;
+  closure->preserve_aspect_ratio =
+    (flags & CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT) != 0;
   closure->cancellable = cancellable != NULL
                        ? g_object_ref (cancellable)
                        : NULL;
@@ -278,6 +337,11 @@ clutter_image_loader_pixbuf_load_stream_async (ClutterImageLoader *loader,
   closure->pos = 0;
 
   g_byte_array_set_size (closure->content, closure->pos + GET_DATA_BLOCK_SIZE);
+
+  g_signal_connect (closure->pixbuf_loader, "size-prepared",
+                    G_CALLBACK (on_loader_size_prepared),
+                    closure);
+
   g_input_stream_read_async (stream, closure->content->data + closure->pos,
                              GET_DATA_BLOCK_SIZE, 0,
                              closure->cancellable,
