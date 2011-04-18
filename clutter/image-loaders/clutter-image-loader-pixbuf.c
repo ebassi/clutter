@@ -219,7 +219,7 @@ load_stream_data_read_callback (GObject      *gobject,
                                            _clutter_image_loader_load_stream_async);
           g_simple_async_result_set_op_res_gpointer (res, closure,
                                                      async_load_closure_free);
-          g_simple_async_result_complete (res);
+          g_simple_async_result_complete_in_idle (res);
           g_object_unref (res);
         }
     }
@@ -251,7 +251,7 @@ load_stream_data_read_callback (GObject      *gobject,
                                        _clutter_image_loader_load_stream_async);
       g_simple_async_result_set_op_res_gpointer (res, closure,
                                                  async_load_closure_free);
-      g_simple_async_result_complete (res);
+      g_simple_async_result_complete_in_idle (res);
       g_object_unref (res);
     }
 }
