@@ -110,6 +110,8 @@ clutter_image_loader_pixbuf_load_stream (ClutterImageLoader     *loader,
   if (pixbuf == NULL)
     return FALSE;
 
+  clutter_threads_enter ();
+
   self->image_width = gdk_pixbuf_get_width (pixbuf);
   self->image_height = gdk_pixbuf_get_height (pixbuf);
   self->pixel_format = gdk_pixbuf_get_has_alpha (pixbuf)
@@ -138,6 +140,8 @@ clutter_image_loader_pixbuf_load_stream (ClutterImageLoader     *loader,
     g_set_error_literal (error, CLUTTER_IMAGE_ERROR,
                          CLUTTER_IMAGE_ERROR_INVALID_DATA,
                          _("Unable to load the image data"));
+
+  clutter_threads_leave ();
 
   return (self->texture != COGL_INVALID_HANDLE);
 }
