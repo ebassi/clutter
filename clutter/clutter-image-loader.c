@@ -175,6 +175,15 @@ _clutter_image_loader_get_texture_handle (ClutterImageLoader *loader)
  * clutter_image_loader_load_stream:
  * @loader: a #ClutterImageLoader
  * @stream: a #GInputStream
+ * @width: the width to use when loading the image, or -1 to use the
+ *   image's own size; if @flags is %CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT
+ *   and width is -1 then the width of the image will be set to preserve
+ *   the aspect ratio with the given @height
+ * @height: the height to use when loading the image, or -1 to use the
+ *   image's own size; if @flags is %CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT
+ *   and height is -1 then the height of the image will be set to
+ *   preserve the aspect ratio with the given @width
+ * @flags: flags to control the image loading
  * @cancellable: (allow-none): a #GCancellable or %NULL
  * @error: return location for a #GError or %NULL
  *
@@ -185,10 +194,13 @@ _clutter_image_loader_get_texture_handle (ClutterImageLoader *loader)
  * Since: 1.8
  */
 gboolean
-_clutter_image_loader_load_stream (ClutterImageLoader  *loader,
-                                   GInputStream        *stream,
-                                   GCancellable        *cancellable,
-                                   GError             **error)
+_clutter_image_loader_load_stream (ClutterImageLoader     *loader,
+                                   GInputStream           *stream,
+                                   gint                    width,
+                                   gint                    height,
+                                   ClutterImageLoadFlags   flags,
+                                   GCancellable           *cancellable,
+                                   GError                **error)
 {
   g_return_val_if_fail (CLUTTER_IS_IMAGE_LOADER (loader), FALSE);
   g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
@@ -197,6 +209,8 @@ _clutter_image_loader_load_stream (ClutterImageLoader  *loader,
 
 
   return CLUTTER_IMAGE_LOADER_GET_CLASS (loader)->load_stream (loader, stream,
+                                                               width, height,
+                                                               flags,
                                                                cancellable,
                                                                error);
 }

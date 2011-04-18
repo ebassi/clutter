@@ -56,6 +56,22 @@ typedef struct _ClutterImageLoader              ClutterImageLoader;
 typedef struct _ClutterImageLoaderClass         ClutterImageLoaderClass;
 
 /**
+ * ClutterImageLoadFlags:
+ * @CLUTTER_IMAGE_LOAD_NONE: No flags
+ * @CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT: Preserve the aspect ratio of the
+ *   image when loading with a predefined size
+ *
+ * Flags to be passed to the image loading functions.
+ *
+ * Since: 1.8
+ */
+typedef enum {
+  CLUTTER_IMAGE_LOAD_NONE = 0,
+
+  CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT = 1 << 0
+} ClutterImageLoadFlags;
+
+/**
  * ClutterImageLoader:
  *
  * The <structname>ClutterImageLoader</structname> structure contains
@@ -82,27 +98,30 @@ struct _ClutterImageLoaderClass
   /*< private >*/
   GObjectClass parent_class;
 
-  gboolean (* is_supported) (void);
+  gboolean   (* is_supported)       (void);
 
-  gboolean (* load_stream) (ClutterImageLoader *loader,
-                            GInputStream       *stream,
-                            GCancellable       *cancellable,
-                            GError            **error);
+  gboolean   (* load_stream)        (ClutterImageLoader     *loader,
+                                     GInputStream           *stream,
+                                     gint                    width,
+                                     gint                    height,
+                                     ClutterImageLoadFlags   flags,
+                                     GCancellable           *cancellable,
+                                     GError                **error);
 
-  void (* load_stream_async) (ClutterImageLoader *loader,
-                              GInputStream       *stream,
-                              GCancellable       *cancellable,
-                              GAsyncReadyCallback      callback,
-                              gpointer            user_data);
-  gboolean (* load_stream_finish) (ClutterImageLoader  *loader,
-                                   GAsyncResult        *result,
-                                   GError             **error);
+  void       (* load_stream_async)  (ClutterImageLoader     *loader,
+                                     GInputStream           *stream,
+                                     GCancellable           *cancellable,
+                                     GAsyncReadyCallback     callback,
+                                     gpointer                user_data);
+  gboolean   (* load_stream_finish) (ClutterImageLoader     *loader,
+                                     GAsyncResult           *result,
+                                     GError                **error);
 
-  void (* get_image_size) (ClutterImageLoader *loader,
-                           gint               *width,
-                           gint               *height);
+  void       (* get_image_size)     (ClutterImageLoader     *loader,
+                                     gint                   *width,
+                                     gint                   *height);
 
-  CoglHandle (* get_texture_handle) (ClutterImageLoader *loader);
+  CoglHandle (* get_texture_handle) (ClutterImageLoader     *loader);
 
   void (* _clutter_image_loader__1) (void);
   void (* _clutter_image_loader__2) (void);
@@ -127,24 +146,27 @@ GType clutter_image_loader_get_type (void) G_GNUC_CONST;
 
 ClutterImageLoader *    _clutter_image_loader_new                       (void);
 
-void                    _clutter_image_loader_get_image_size            (ClutterImageLoader   *loader,
-                                                                         gint                 *width,
-                                                                         gint                 *height);
-CoglHandle              _clutter_image_loader_get_texture_handle        (ClutterImageLoader   *loader);
+void                    _clutter_image_loader_get_image_size            (ClutterImageLoader     *loader,
+                                                                         gint                   *width,
+                                                                         gint                   *height);
+CoglHandle              _clutter_image_loader_get_texture_handle        (ClutterImageLoader     *loader);
 
-gboolean                _clutter_image_loader_load_stream               (ClutterImageLoader   *loader,
-                                                                         GInputStream         *stream,
-                                                                         GCancellable         *cancellable,
-                                                                         GError              **error);
+gboolean                _clutter_image_loader_load_stream               (ClutterImageLoader     *loader,
+                                                                         GInputStream           *stream,
+                                                                         gint                    width,
+                                                                         gint                    height,
+                                                                         ClutterImageLoadFlags   flags,
+                                                                         GCancellable           *cancellable,
+                                                                         GError                **error);
 
-void                    _clutter_image_loader_load_stream_async         (ClutterImageLoader   *loader,
-                                                                         GInputStream         *stream,
-                                                                         GCancellable         *cancellable,
-                                                                         GAsyncReadyCallback   callback,
-                                                                         gpointer              user_data);
-gboolean                _clutter_image_loader_load_stream_finish        (ClutterImageLoader   *loader,
-                                                                         GAsyncResult         *result,
-                                                                         GError              **error);
+void                    _clutter_image_loader_load_stream_async         (ClutterImageLoader     *loader,
+                                                                         GInputStream           *stream,
+                                                                         GCancellable           *cancellable,
+                                                                         GAsyncReadyCallback     callback,
+                                                                         gpointer                user_data);
+gboolean                _clutter_image_loader_load_stream_finish        (ClutterImageLoader     *loader,
+                                                                         GAsyncResult           *result,
+                                                                         GError                **error);
 
 G_END_DECLS
 

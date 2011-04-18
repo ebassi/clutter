@@ -486,6 +486,8 @@ clutter_image_load (ClutterImage  *image,
 
   res = _clutter_image_loader_load_stream (loader,
                                            G_INPUT_STREAM (stream),
+                                           -1, -1,
+                                           CLUTTER_IMAGE_LOAD_NONE,
                                            cancellable,
                                            error);
   if (!res)

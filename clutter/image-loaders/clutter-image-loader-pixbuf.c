@@ -88,15 +88,25 @@ clutter_image_loader_pixbuf_is_supported (void)
 }
 
 static gboolean
-clutter_image_loader_pixbuf_load_stream (ClutterImageLoader *loader,
-                                         GInputStream       *stream,
-                                         GCancellable       *cancellable,
-                                         GError            **error)
+clutter_image_loader_pixbuf_load_stream (ClutterImageLoader     *loader,
+                                         GInputStream           *stream,
+                                         gint                    width,
+                                         gint                    height,
+                                         ClutterImageLoadFlags   flags,
+                                         GCancellable           *cancellable,
+                                         GError                **error)
 {
   ClutterImageLoaderPixbuf *self = CLUTTER_IMAGE_LOADER_PIXBUF (loader);
+  gboolean preserve_aspect_ratio;
   GdkPixbuf *pixbuf;
 
-  pixbuf = gdk_pixbuf_new_from_stream (stream, cancellable, error);
+  preserve_aspect_ratio = (flags & CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT) != 0;
+
+  pixbuf = gdk_pixbuf_new_from_stream_at_scale (stream,
+                                                width, height,
+                                                preserve_aspect_ratio,
+                                                cancellable,
+                                                error);
   if (pixbuf == NULL)
     return FALSE;
 
