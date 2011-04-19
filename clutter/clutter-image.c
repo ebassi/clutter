@@ -116,6 +116,18 @@ _clutter_image_create_material (ClutterImage *image)
   return CLUTTER_IMAGE_GET_CLASS (image)->create_material (image);
 }
 
+static CoglMaterial *
+clutter_image_get_material (ClutterContent *content)
+{
+  ClutterImage *image = CLUTTER_IMAGE (content);
+  ClutterImagePrivate *priv = image->priv;
+
+  if (priv->material == NULL)
+    priv->material = _clutter_image_create_material (image);
+
+  return priv->material;
+}
+
 static gboolean
 clutter_image_setup_material (ClutterContent *content,
                               ClutterActor   *actor)
@@ -134,6 +146,7 @@ static void
 clutter_content_iface_init (ClutterContentIface *iface)
 {
   iface->setup_material = clutter_image_setup_material;
+  iface->get_material = clutter_image_get_material;
 }
 
 static void

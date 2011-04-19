@@ -14,6 +14,7 @@ load_async_done (GObject      *gobject,
                  GAsyncResult *result,
                  gpointer      dummy G_GNUC_UNUSED)
 {
+  CoglMaterial *material;
   GError *error = NULL;
   gboolean res;
 
@@ -24,6 +25,15 @@ load_async_done (GObject      *gobject,
       g_error_free (error);
       return;
     }
+
+  material = clutter_content_get_material (CLUTTER_CONTENT (gobject));
+  if (material == NULL)
+    return;
+
+  /* change the layer filters for the Image material */
+  cogl_material_set_layer_filters (material, 0,
+                                   COGL_MATERIAL_FILTER_LINEAR_MIPMAP_LINEAR,
+                                   COGL_MATERIAL_FILTER_LINEAR);
 }
 
 G_MODULE_EXPORT int

@@ -116,6 +116,12 @@ clutter_content_real_get_paint_volume (ClutterContent     *content,
   return TRUE;
 }
 
+static CoglMaterial *
+clutter_content_real_get_material (ClutterContent *content)
+{
+  return NULL;
+}
+
 static void
 clutter_content_real_invalidate (ClutterContent *content)
 {
@@ -147,6 +153,7 @@ clutter_content_default_init (ClutterContentInterface *iface)
   iface->update_geometry = clutter_content_real_update_geometry;
   iface->paint_content = clutter_content_real_paint_content;
   iface->get_paint_volume = clutter_content_real_get_paint_volume;
+  iface->get_material = clutter_content_real_get_material;
   iface->invalidate = clutter_content_real_invalidate;
 }
 
@@ -397,6 +404,25 @@ _clutter_content_add_actor (ClutterContent *content,
     }
 
   g_hash_table_insert (actors, actor, GUINT_TO_POINTER (1));
+}
+
+/**
+ * clutter_content_get_material:
+ * @content: a #ClutterContent
+ *
+ * Requests the Cogl material of @content, if any.
+ *
+ * Return value: (transfer none): a pointer to the Cogl material used
+ *   by the #ClutterContent implementation, or %NULL
+ *
+ * Since: 1.8
+ */
+CoglMaterial *
+clutter_content_get_material (ClutterContent *content)
+{
+  g_return_val_if_fail (CLUTTER_IS_CONTENT (content), NULL);
+
+  return CLUTTER_CONTENT_GET_IFACE (content)->get_material (content);
 }
 
 /**

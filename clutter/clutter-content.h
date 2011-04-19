@@ -29,6 +29,7 @@
 #ifndef __CLUTTER_CONTENT_H__
 #define __CLUTTER_CONTENT_H__
 
+#include <cogl/cogl.h>
 #include <clutter/clutter-types.h>
 
 G_BEGIN_DECLS
@@ -50,6 +51,8 @@ typedef struct _ClutterContentIface     ClutterContentIface;
  *   the given actor
  * @get_paint_volume: virtual function, used to update the paint volume
  *   for the given actor
+ * @get_material: virtual function, used to retrieve the Cogl material
+ *   used by the content
  * @invalidate: virtual function, used to notify actors of a content
  *   update
  *
@@ -63,18 +66,20 @@ struct _ClutterContentIface
   GTypeInterface g_iface;
 
   /*< public >*/
-  gboolean (* setup_material)   (ClutterContent     *content,
-                                 ClutterActor       *actor);
-  void     (* update_geometry)  (ClutterContent     *content,
-                                 ClutterActor       *actor);
-  void     (* paint_content)    (ClutterContent     *content,
-                                 ClutterActor       *actor);
+  gboolean      (* setup_material)   (ClutterContent     *content,
+                                      ClutterActor       *actor);
+  void          (* update_geometry)  (ClutterContent     *content,
+                                      ClutterActor       *actor);
+  void          (* paint_content)    (ClutterContent     *content,
+                                      ClutterActor       *actor);
 
-  gboolean (* get_paint_volume) (ClutterContent     *content,
-                                 ClutterActor       *actor,
-                                 ClutterPaintVolume *volume);
+  gboolean      (* get_paint_volume) (ClutterContent     *content,
+                                      ClutterActor       *actor,
+                                      ClutterPaintVolume *volume);
 
-  void     (* invalidate)       (ClutterContent     *content);
+  CoglMaterial *(* get_material)     (ClutterContent     *content);
+
+  void          (* invalidate)       (ClutterContent     *content);
 };
 
 GType clutter_content_get_type (void) G_GNUC_CONST;
@@ -89,6 +94,8 @@ void            clutter_content_paint_content           (ClutterContent     *con
 gboolean        clutter_content_get_paint_volume        (ClutterContent     *content,
                                                          ClutterActor       *actor,
                                                          ClutterPaintVolume *volume);
+
+CoglMaterial *  clutter_content_get_material            (ClutterContent     *content);
 
 void            clutter_content_invalidate              (ClutterContent     *content);
 
