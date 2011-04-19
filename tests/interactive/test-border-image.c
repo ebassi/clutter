@@ -72,9 +72,12 @@ test_border_image_main (int   argc,
 
   image = CLUTTER_CONTENT (clutter_image_new ());
   gfile = g_file_new_for_path (TESTS_DATADIR "/redhand.png");
-  clutter_image_load_async (CLUTTER_IMAGE (image), gfile, NULL,
-                            load_async_done,
-                            NULL);
+  clutter_image_load_at_scale_async (CLUTTER_IMAGE (image), gfile,
+                                     RECT_SIZE, RECT_SIZE,
+                                     CLUTTER_IMAGE_LOAD_NONE,
+                                     NULL,
+                                     load_async_done,
+                                     NULL);
   g_object_unref (gfile);
 
   n_cols = (STAGE_WIDTH  - (2 * PADDING)) / (RECT_SIZE + (2 * SPACING));

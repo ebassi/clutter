@@ -35,6 +35,43 @@ image_sync_loading (void)
   g_object_unref (image);
 }
 
+void
+image_sync_loading_at_scale (void)
+{
+  ClutterImage *image = clutter_image_new ();
+  GError *error;
+  GFile *gfile;
+  gint width, height;
+  gboolean res;
+
+  g_assert (CLUTTER_IS_IMAGE (image));
+
+  gfile = g_file_new_for_path (TESTS_DATADIR "/redhand.png");
+
+  width = height = 0;
+  error = NULL;
+
+  res = clutter_image_load_at_scale (image, gfile,
+                                     64, 64, CLUTTER_IMAGE_LOAD_NONE,
+                                     NULL,
+                                     &error);
+
+  if (g_test_verbose() && error != NULL)
+    g_print ("Unexpected error: %s\n", error->message);
+
+  g_assert (error == NULL);
+  g_assert (res);
+
+  clutter_image_get_size (image, &width, &height);
+  g_assert_cmpint (width, ==, 64);
+  g_assert_cmpint (height, ==, 64);
+
+  g_assert (clutter_image_get_cogl_texture (image) != COGL_INVALID_HANDLE);
+
+  g_object_unref (gfile);
+  g_object_unref (image);
+}
+
 static void
 async_load_done_cb (GObject      *gobject,
                     GAsyncResult *result,

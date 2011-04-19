@@ -124,34 +124,51 @@ struct _ClutterImageClass
 GQuark clutter_image_error_quark (void);
 GType clutter_image_get_type (void) G_GNUC_CONST;
 
-ClutterImage *  clutter_image_new               (void);
+ClutterImage *  clutter_image_new                       (void);
 
-gboolean        clutter_image_load_from_data    (ClutterImage         *image,
-                                                 const guchar         *data,
-                                                 CoglPixelFormat       format,
-                                                 gint                  width,
-                                                 gint                  height,
-                                                 gint                  rowstride,
-                                                 GError              **error);
+gboolean        clutter_image_load_from_data            (ClutterImage           *image,
+                                                         const guchar           *data,
+                                                         CoglPixelFormat         format,
+                                                         gint                    width,
+                                                         gint                    height,
+                                                         gint                    rowstride,
+                                                         GError                **error);
 
-gboolean        clutter_image_load              (ClutterImage         *image,
-                                                 GFile                *gfile,
-                                                 GCancellable         *cancellable,
-                                                 GError              **error);
-void            clutter_image_load_async        (ClutterImage         *image,
-                                                 GFile                *gfile,
-                                                 GCancellable         *cancellable,
-                                                 GAsyncReadyCallback   callback,
-                                                 gpointer              user_data);
-gboolean        clutter_image_load_finish       (ClutterImage         *image,
-                                                 GAsyncResult         *res,
-                                                 GError              **error);
+gboolean        clutter_image_load                      (ClutterImage           *image,
+                                                         GFile                  *gfile,
+                                                         GCancellable           *cancellable,
+                                                         GError                **error);
+gboolean        clutter_image_load_at_scale             (ClutterImage           *image,
+                                                         GFile                  *gfile,
+                                                         gint                    width,
+                                                         gint                    height,
+                                                         ClutterImageLoadFlags   flags,
+                                                         GCancellable           *cancellable,
+                                                         GError                **error);
 
-void            clutter_image_get_size          (ClutterImage         *image,
-                                                 gint                 *width,
-                                                 gint                 *height);
+void            clutter_image_load_async                (ClutterImage           *image,
+                                                         GFile                  *gfile,
+                                                         GCancellable           *cancellable,
+                                                         GAsyncReadyCallback     callback,
+                                                         gpointer                user_data);
+void            clutter_image_load_at_scale_async       (ClutterImage           *image,
+                                                         GFile                  *gfile,
+                                                         gint                    width,
+                                                         gint                    height,
+                                                         ClutterImageLoadFlags   flags,
+                                                         GCancellable           *cancellable,
+                                                         GAsyncReadyCallback     callback,
+                                                         gpointer                user_data);
 
-CoglHandle      clutter_image_get_cogl_texture  (ClutterImage         *image);
+gboolean        clutter_image_load_finish               (ClutterImage           *image,
+                                                         GAsyncResult           *res,
+                                                         GError                **error);
+
+void            clutter_image_get_size                  (ClutterImage           *image,
+                                                         gint                   *width,
+                                                         gint                   *height);
+
+CoglHandle      clutter_image_get_cogl_texture          (ClutterImage           *image);
 
 G_END_DECLS
 

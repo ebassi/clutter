@@ -210,6 +210,7 @@ main (int argc, char **argv)
   TEST_CONFORM_SIMPLE ("/behaviours", test_behaviours);
 
   TEST_CONFORM_SIMPLE ("/image", image_sync_loading);
+  TEST_CONFORM_SIMPLE ("/image", image_sync_loading_at_scale);
   TEST_CONFORM_SIMPLE ("/image", image_async_loading);
 
   TEST_CONFORM_SIMPLE ("/cogl", test_cogl_object);

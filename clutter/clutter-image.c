@@ -428,16 +428,28 @@ clutter_image_load_from_data (ClutterImage     *image,
 
   return TRUE;
 }
-
 /**
- * clutter_image_load:
+ * clutter_image_load_at_scale:
  * @image: a #ClutterImage
  * @gfile: a #GFile
+ * @width: the width of the image, or -1 to use the size of the image
+ *   data; if @flags contains %CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT and
+ *   the @width is -1 then the width of the image will be set depending
+ *   on the value specified in @height
+ * @height: the height of the image, or -1 to use the size of the image
+ *   data; if @flags contains %CLUTTER_IMAGE_LOAD_PRESERVE_ASPETC and
+ *   the @height is -1 then the height of the image will be set depending
+ *   on the value specified in @width
+ * @flags: flags to modify the image loading operations
  * @cancellable: (allow-none): a #GCancellable, or %NULL
  * @error: return location for a #GError, or %NULL
  *
  * Synchronously loads image data available to the location pointed
- * by @gfile.
+ * by @gfile, scaling it to match @width and @height (with potential
+ * optimizations depending on the image format).
+ *
+ * This function should be used to load potentially large images when
+ * the final, on-screen size is known.
  *
  * This function will block the execution until the image data has
  * been loaded, or an error was encountered.
@@ -452,10 +464,13 @@ clutter_image_load_from_data (ClutterImage     *image,
  * Since: 1.8
  */
 gboolean
-clutter_image_load (ClutterImage  *image,
-                    GFile         *gfile,
-                    GCancellable  *cancellable,
-                    GError       **error)
+clutter_image_load_at_scale (ClutterImage           *image,
+                             GFile                  *gfile,
+                             gint                    width,
+                             gint                    height,
+                             ClutterImageLoadFlags   flags,
+                             GCancellable           *cancellable,
+                             GError                **error)
 {
   ClutterImageLoader *loader;
   ClutterImagePrivate *priv;
@@ -482,8 +497,8 @@ clutter_image_load (ClutterImage  *image,
 
   res = _clutter_image_loader_load_stream (loader,
                                            G_INPUT_STREAM (stream),
-                                           -1, -1,
-                                           CLUTTER_IMAGE_LOAD_NONE,
+                                           width, height,
+                                           flags,
                                            cancellable,
                                            error);
   if (!res)
@@ -548,11 +563,50 @@ clutter_image_load (ClutterImage  *image,
   return TRUE;
 }
 
+/**
+ * clutter_image_load:
+ * @image: a #ClutterImage
+ * @gfile: a #GFile
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: return location for a #GError, or %NULL
+ *
+ * Synchronously loads image data available to the location pointed
+ * by @gfile.
+ *
+ * This function will block the execution until the image data has
+ * been loaded, or an error was encountered.
+ *
+ * It is possible to cancel the loading by using the @cancellable
+ * instance.
+ *
+ * In case of error, the #GError structure will be filled accordingly.
+ *
+ * Return value: %TRUE if the loading was successful, and %FALSE otherwise
+ *
+ * Since: 1.8
+ */
+gboolean
+clutter_image_load (ClutterImage  *image,
+                    GFile         *gfile,
+                    GCancellable  *cancellable,
+                    GError       **error)
+{
+  return clutter_image_load_at_scale (image, gfile,
+                                      -1, -1,
+                                      CLUTTER_IMAGE_LOAD_NONE,
+                                      cancellable,
+                                      error);
+}
+
 typedef struct {
   ClutterImageLoader *loader;
   ClutterImage *image;
+  gint width;
+  gint height;
+  ClutterImageLoadFlags flags;
   GAsyncReadyCallback callback;
   gpointer user_data;
+  gpointer tag;
   GInputStream *stream;
   GError *error;
   GCancellable *cancellable;
@@ -603,7 +657,7 @@ async_load_complete (GObject      *gobject,
   res = g_simple_async_result_new (G_OBJECT (closure->image),
                                    closure->callback,
                                    closure->user_data,
-                                   clutter_image_load_async);
+                                   closure->tag);
 
   g_simple_async_result_set_op_res_gpointer (res,
                                              closure,
@@ -656,11 +710,78 @@ async_read_complete (GObject      *gobject,
                 G_OBJECT_TYPE_NAME (closure->loader));
   _clutter_image_loader_load_stream_async (closure->loader,
                                            closure->stream,
-                                           -1, -1,
-                                           CLUTTER_IMAGE_LOAD_NONE,
+                                           closure->width,
+                                           closure->height,
+                                           closure->flags,
                                            closure->cancellable,
                                            async_load_complete,
                                            closure);
+}
+
+/**
+ * clutter_image_load_at_scale_async:
+ * @image: a #ClutterImage
+ * @gfile: a #GFile
+ * @width: the width of the image, or -1 to use the size of the image
+ *   data; if @flags contains %CLUTTER_IMAGE_LOAD_PRESERVE_ASPECT and
+ *   the @width is -1 then the width of the image will be set depending
+ *   on the value specified in @height
+ * @height: the height of the image, or -1 to use the size of the image
+ *   data; if @flags contains %CLUTTER_IMAGE_LOAD_PRESERVE_ASPETC and
+ *   the @height is -1 then the height of the image will be set depending
+ *   on the value specified in @width
+ * @flags: flags to modify the image loading operations
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @callback: (scope async): a callback function
+ * @user_data: closure to pass to @callback
+ *
+ * Asynchronously loads image data from the resource pointed by @gfile
+ * into @image.
+ *
+ * When the image data has been loaded the @callback function will be
+ * called; it is the responsability of the developer to call
+ * clutter_image_load_finish() inside @callback.
+ *
+ * Since: 1.8
+ */
+void
+clutter_image_load_at_scale_async (ClutterImage          *image,
+                                   GFile                 *gfile,
+                                   gint                   width,
+                                   gint                   height,
+                                   ClutterImageLoadFlags  flags,
+                                   GCancellable          *cancellable,
+                                   GAsyncReadyCallback    callback,
+                                   gpointer               user_data)
+{
+  AsyncReadClosure *closure;
+  ClutterImageLoader *loader;
+
+  g_return_if_fail (CLUTTER_IS_IMAGE (image));
+  g_return_if_fail (G_IS_FILE (gfile));
+  g_return_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable));
+  g_return_if_fail (callback != NULL);
+
+  loader = _clutter_image_loader_new ();
+  if (loader == NULL)
+    return;
+
+  closure = g_new0 (AsyncReadClosure, 1);
+  closure->loader = loader;
+  closure->image = g_object_ref (image);
+  closure->width = width;
+  closure->height = height;
+  closure->flags = flags;
+  closure->tag = clutter_image_load_at_scale_async;
+  closure->cancellable = (cancellable != NULL)
+                       ? g_object_ref (cancellable)
+                       : NULL;
+  closure->callback = callback;
+  closure->user_data = user_data;
+
+  g_file_read_async (gfile, G_PRIORITY_DEFAULT, cancellable,
+                     async_read_complete,
+                     closure);
 }
 
 /**
@@ -702,6 +823,10 @@ clutter_image_load_async (ClutterImage        *image,
   closure = g_new0 (AsyncReadClosure, 1);
   closure->loader = loader;
   closure->image = g_object_ref (image);
+  closure->width = -1;
+  closure->height = -1;
+  closure->flags = CLUTTER_IMAGE_LOAD_NONE;
+  closure->tag = clutter_image_load_async;
   closure->cancellable = (cancellable != NULL)
                        ? g_object_ref (cancellable)
                        : NULL;
@@ -746,7 +871,8 @@ clutter_image_load_finish (ClutterImage  *image,
   if (g_simple_async_result_propagate_error (simple, error))
     return FALSE;
 
-  g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == clutter_image_load_async);
+  g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == clutter_image_load_async ||
+                  g_simple_async_result_get_source_tag (simple) == clutter_image_load_at_scale_async);
 
   closure = g_simple_async_result_get_op_res_gpointer (simple);
   if (closure->error != NULL)
