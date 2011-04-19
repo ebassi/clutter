@@ -434,8 +434,6 @@ clutter_image_load_from_data (ClutterImage     *image,
  * @image: a #ClutterImage
  * @gfile: a #GFile
  * @cancellable: (allow-none): a #GCancellable, or %NULL
- * @width: (out): return location for the width of the image, or %NULL
- * @height: (out): return location for the height of the image, or %NULL
  * @error: return location for a #GError, or %NULL
  *
  * Synchronously loads image data available to the location pointed
@@ -457,8 +455,6 @@ gboolean
 clutter_image_load (ClutterImage  *image,
                     GFile         *gfile,
                     GCancellable  *cancellable,
-                    gint          *width,
-                    gint          *height,
                     GError       **error)
 {
   ClutterImageLoader *loader;
@@ -545,12 +541,6 @@ clutter_image_load (ClutterImage  *image,
                    priv->image_height);
 
   g_object_thaw_notify (G_OBJECT (image));
-
-  if (width)
-    *width = priv->image_width;
-
-  if (height)
-    *height = priv->image_height;
 
   g_object_unref (loader);
   g_object_unref (stream);
@@ -727,8 +717,6 @@ clutter_image_load_async (ClutterImage        *image,
  * clutter_image_load_finish:
  * @image: a #ClutterImage
  * @res: a #GAsyncResult
- * @width: (out): return location for the width of the image data, or %NULL
- * @height: (out): return location for the height of the image data, or %NULL
  * @error: return location for a #GError, or %NULL
  *
  * Terminates the asynchronous loading started by clutter_image_load_async()
@@ -741,8 +729,6 @@ clutter_image_load_async (ClutterImage        *image,
 gboolean
 clutter_image_load_finish (ClutterImage  *image,
                            GAsyncResult  *res,
-                           gint          *width,
-                           gint          *height,
                            GError       **error)
 {
   AsyncReadClosure *closure;
@@ -765,12 +751,6 @@ clutter_image_load_finish (ClutterImage  *image,
   closure = g_simple_async_result_get_op_res_gpointer (simple);
   if (closure->error != NULL)
     {
-      if (width)
-        *width = 0;
-
-      if (height)
-        *height = 0;
-
       g_propagate_error (error, closure->error);
       closure->error = NULL;
 
@@ -825,12 +805,6 @@ clutter_image_load_finish (ClutterImage  *image,
                    priv->image_height);
 
   g_object_thaw_notify (G_OBJECT (image));
-
-  if (width)
-    *width = priv->image_width;
-
-  if (height)
-    *height = priv->image_height;
 
   return TRUE;
 }

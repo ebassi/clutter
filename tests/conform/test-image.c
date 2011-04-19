@@ -17,18 +17,18 @@ image_sync_loading (void)
   width = height = 0;
   error = NULL;
 
-  res = clutter_image_load (image, gfile, NULL,
-                            &width,
-                            &height,
-                            &error);
+  res = clutter_image_load (image, gfile, NULL, &error);
 
   if (g_test_verbose() && error != NULL)
     g_print ("Unexpected error: %s\n", error->message);
 
   g_assert (error == NULL);
   g_assert (res);
+
+  clutter_image_get_size (image, &width, &height);
   g_assert_cmpint (width, >, 0);
   g_assert_cmpint (height, >, 0);
+
   g_assert (clutter_image_get_cogl_texture (image) != COGL_INVALID_HANDLE);
 
   g_object_unref (gfile);
@@ -47,18 +47,18 @@ async_load_done_cb (GObject      *gobject,
   gboolean res;
 
   width = height = 0;
-  res = clutter_image_load_finish (image, result,
-                                   &width,
-                                   &height,
-                                   &error);
+  res = clutter_image_load_finish (image, result, &error);
 
   if (g_test_verbose () && error != NULL)
     g_print ("Unexpected error: %s\n", error->message);
 
   g_assert (res);
   g_assert (error == NULL);
+
+  clutter_image_get_size (image, &width, &height);
   g_assert_cmpint (width, >, 0);
   g_assert_cmpint (height, >, 0);
+
   g_assert (clutter_image_get_cogl_texture (image) != COGL_INVALID_HANDLE);
 
   g_main_loop_quit (main_loop);

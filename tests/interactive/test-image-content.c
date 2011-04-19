@@ -16,12 +16,8 @@ load_async_done (GObject      *gobject,
 {
   GError *error = NULL;
   gboolean res;
-  int width, height;
 
-  res = clutter_image_load_finish (CLUTTER_IMAGE (gobject), result,
-                                   &width,
-                                   &height,
-                                   &error);
+  res = clutter_image_load_finish (CLUTTER_IMAGE (gobject), result, &error);
   if (!res)
     {
       g_print ("Unable to load 'redhand.png': %s", error->message);

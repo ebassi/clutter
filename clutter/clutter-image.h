@@ -137,8 +137,6 @@ gboolean        clutter_image_load_from_data    (ClutterImage         *image,
 gboolean        clutter_image_load              (ClutterImage         *image,
                                                  GFile                *gfile,
                                                  GCancellable         *cancellable,
-                                                 gint                 *width,
-                                                 gint                 *height,
                                                  GError              **error);
 void            clutter_image_load_async        (ClutterImage         *image,
                                                  GFile                *gfile,
@@ -147,8 +145,6 @@ void            clutter_image_load_async        (ClutterImage         *image,
                                                  gpointer              user_data);
 gboolean        clutter_image_load_finish       (ClutterImage         *image,
                                                  GAsyncResult         *res,
-                                                 gint                 *width,
-                                                 gint                 *height,
                                                  GError              **error);
 
 void            clutter_image_get_size          (ClutterImage         *image,
