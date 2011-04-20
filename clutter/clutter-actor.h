@@ -582,9 +582,25 @@ const ClutterPaintVolume  *clutter_actor_get_transformed_paint_volume (ClutterAc
 gboolean             clutter_actor_get_paint_box      (ClutterActor         *self,
                                                        ClutterActorBox      *box);
 
-void                 clutter_actor_set_content        (ClutterActor         *self,
-                                                       ClutterContent       *content);
-ClutterContent *     clutter_actor_get_content        (ClutterActor         *self);
+void                    clutter_actor_set_content       (ClutterActor    *self,
+                                                         ClutterContent  *content);
+ClutterContent *        clutter_actor_get_content       (ClutterActor    *self);
+
+void                    clutter_actor_set_margin_top    (ClutterActor    *self,
+                                                         gfloat           margin);
+gfloat                  clutter_actor_get_margin_top    (ClutterActor    *self);
+void                    clutter_actor_set_margin_right  (ClutterActor    *self,
+                                                         gfloat           margin);
+gfloat                  clutter_actor_get_margin_right  (ClutterActor    *self);
+void                    clutter_actor_set_margin_bottom (ClutterActor    *self,
+                                                         gfloat           margin);
+gfloat                  clutter_actor_get_margin_bottom (ClutterActor    *self);
+void                    clutter_actor_set_margin_left   (ClutterActor    *self,
+                                                         gfloat           margin);
+gfloat                  clutter_actor_get_margin_left   (ClutterActor    *self);
+
+void                    clutter_actor_get_content_box   (ClutterActor    *self,
+                                                         ClutterActorBox *box);
 
 G_END_DECLS
 

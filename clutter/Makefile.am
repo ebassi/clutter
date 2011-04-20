@@ -259,6 +259,7 @@ source_h_priv = \
 	$(srcdir)/clutter-event-translator.h		\
 	$(srcdir)/clutter-event-private.h		\
 	$(srcdir)/clutter-id-pool.h 			\
+	$(srcdir)/clutter-macros-private.h		\
 	$(srcdir)/clutter-master-clock.h		\
 	$(srcdir)/clutter-model-private.h		\
 	$(srcdir)/clutter-offscreen-effect-private.h	\

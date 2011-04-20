@@ -42,6 +42,7 @@
 #include "clutter-feature.h"
 #include "clutter-id-pool.h"
 #include "clutter-layout-manager.h"
+#include "clutter-macros-private.h"
 #include "clutter-master-clock.h"
 #include "clutter-settings.h"
 #include "clutter-stage.h"
@@ -49,44 +50,6 @@
 G_BEGIN_DECLS
 
 typedef struct _ClutterMainContext      ClutterMainContext;
-
-#define CLUTTER_REGISTER_VALUE_TRANSFORM_TO(TYPE_TO,func)             { \
-  g_value_register_transform_func (g_define_type_id, TYPE_TO, func);    \
-}
-
-#define CLUTTER_REGISTER_VALUE_TRANSFORM_FROM(TYPE_FROM,func)         { \
-  g_value_register_transform_func (TYPE_FROM, g_define_type_id, func);  \
-}
-
-#define CLUTTER_REGISTER_INTERVAL_PROGRESS(func)                      { \
-  clutter_interval_register_progress_func (g_define_type_id, func);     \
-}
-
-#define CLUTTER_PRIVATE_FLAGS(a)	 (((ClutterActor *) (a))->private_flags)
-#define CLUTTER_SET_PRIVATE_FLAGS(a,f)	 (CLUTTER_PRIVATE_FLAGS (a) |= (f))
-#define CLUTTER_UNSET_PRIVATE_FLAGS(a,f) (CLUTTER_PRIVATE_FLAGS (a) &= ~(f))
-
-#define CLUTTER_ACTOR_IS_TOPLEVEL(a)            ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_IS_TOPLEVEL) != FALSE)
-#define CLUTTER_ACTOR_IS_INTERNAL_CHILD(a)      ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_INTERNAL_CHILD) != FALSE)
-#define CLUTTER_ACTOR_IN_DESTRUCTION(a)         ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_IN_DESTRUCTION) != FALSE)
-#define CLUTTER_ACTOR_IN_REPARENT(a)            ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_IN_REPARENT) != FALSE)
-#define CLUTTER_ACTOR_IN_PAINT(a)               ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_IN_PAINT) != FALSE)
-#define CLUTTER_ACTOR_IN_RELAYOUT(a)            ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_IN_RELAYOUT) != FALSE)
-#define CLUTTER_STAGE_IN_RESIZE(a)              ((CLUTTER_PRIVATE_FLAGS (a) & CLUTTER_IN_RESIZE) != FALSE)
-
-#define CLUTTER_PARAM_READABLE  (G_PARAM_READABLE | G_PARAM_STATIC_STRINGS)
-#define CLUTTER_PARAM_WRITABLE  (G_PARAM_WRITABLE | G_PARAM_STATIC_STRINGS)
-#define CLUTTER_PARAM_READWRITE (G_PARAM_READABLE | G_PARAM_WRITABLE | G_PARAM_STATIC_STRINGS)
-
-/* automagic interning of a static string */
-#define I_(str)  (g_intern_static_string ((str)))
-
-/* mark all properties under the "Property" context */
-#ifdef ENABLE_NLS
-#define P_(String) (_clutter_gettext ((String)))
-#else
-#define P_(String) (String)
-#endif
 
 /* Cairo stores the data in native byte order as ARGB but Cogl's pixel
    formats specify the actual byte order. Therefore we need to use a

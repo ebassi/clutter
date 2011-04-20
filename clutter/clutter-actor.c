@@ -483,6 +483,11 @@ struct _ClutterActorPrivate
   ClutterStageQueueRedrawEntry *queue_redraw_entry;
 
   ClutterContent *content;
+
+  float margin_top;
+  float margin_right;
+  float margin_bottom;
+  float margin_left;
 };
 
 enum
@@ -570,6 +575,11 @@ enum
   PROP_EFFECT,
 
   PROP_CONTENT,
+
+  PROP_MARGIN_TOP,
+  PROP_MARGIN_RIGHT,
+  PROP_MARGIN_BOTTOM,
+  PROP_MARGIN_LEFT,
 
   PROP_LAST
 };
@@ -12240,3 +12250,61 @@ clutter_actor_get_content (ClutterActor *self)
 
   return self->priv->content;
 }
+
+void
+clutter_actor_get_content_box (ClutterActor    *self,
+                               ClutterActorBox *box)
+{
+  ClutterActorPrivate *priv;
+
+  g_return_if_fail (CLUTTER_IS_ACTOR (self));
+  g_return_if_fail (box != NULL);
+
+  priv = self->priv;
+
+  if (priv->content == NULL)
+    {
+      clutter_actor_get_allocation_box (self, box);
+      return;
+    }
+
+  *box = priv->allocation;
+
+  box->x1 = priv->margin_left;
+  box->x2 = box->x2 - priv->margin_right;
+  if (box->x2 < box->x1)
+    box->x2 = box->x1;
+
+  box->y1 = priv->margin_top;
+  box->y2 = box->y2 - priv->margin_bottom;
+  if (box->y2 < box->y1)
+    box->y2 = box->y1;
+}
+
+G_DEFINE_PROPERTY_SYNTH_GET (ClutterActor, clutter_actor, float, margin_top, 0.0)
+G_DEFINE_PROPERTY_SYNTH_SET_WITH_CODE (ClutterActor, clutter_actor,
+                                       float, margin_top,
+                                       g_object_notify_by_pspec (G_OBJECT (self),
+                                                                 obj_props[PROP_MARGIN_TOP]);
+                                       clutter_actor_queue_redraw (self))
+
+G_DEFINE_PROPERTY_SYNTH_GET (ClutterActor, clutter_actor, float, margin_right, 0.0)
+G_DEFINE_PROPERTY_SYNTH_SET_WITH_CODE (ClutterActor, clutter_actor,
+                                       float, margin_right,
+                                       g_object_notify_by_pspec (G_OBJECT (self),
+                                                                 obj_props[PROP_MARGIN_RIGHT]);
+                                       clutter_actor_queue_redraw (self))
+
+G_DEFINE_PROPERTY_SYNTH_GET (ClutterActor, clutter_actor, float, margin_bottom, 0.0)
+G_DEFINE_PROPERTY_SYNTH_SET_WITH_CODE (ClutterActor, clutter_actor,
+                                       float, margin_bottom,
+                                       g_object_notify_by_pspec (G_OBJECT (self),
+                                                                 obj_props[PROP_MARGIN_BOTTOM]);
+                                       clutter_actor_queue_redraw (self))
+
+G_DEFINE_PROPERTY_SYNTH_GET (ClutterActor, clutter_actor, float, margin_left, 0.0)
+G_DEFINE_PROPERTY_SYNTH_SET_WITH_CODE (ClutterActor, clutter_actor,
+                                       float, margin_left,
+                                       g_object_notify_by_pspec (G_OBJECT (self),
+                                                                 obj_props[PROP_MARGIN_LEFT]);
+                                       clutter_actor_queue_redraw (self))
