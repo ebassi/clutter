@@ -12,7 +12,13 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+#endif
+
+#ifdef CLUTTER_WINDOWING_X11
 #include "../x11/clutter-stage-x11.h"
+#endif
+#ifdef CLUTTER_WINDOWING_GDK
+#include "../gdk/clutter-stage-gdk.h"
 #endif
 
 #include "clutter-backend-cogl.h"
@@ -31,12 +37,13 @@ typedef struct _ClutterStageCoglClass    ClutterStageCoglClass;
 
 struct _ClutterStageCogl
 {
-#ifdef COGL_HAS_X11_SUPPORT
-
+#ifdef CLUTTER_WINDOWING_X11
   ClutterStageX11 parent_instance;
 
-#else
+#elif defined(CLUTTER_WINDOWING_GDK)
+  ClutterStageGdk parent_instance;
 
+#else
   GObject parent_instance;
 
  /* the stage wrapper */
@@ -68,9 +75,9 @@ struct _ClutterStageCogl
 
 struct _ClutterStageCoglClass
 {
-#ifdef COGL_HAS_X11_SUPPORT
+#ifdef CLUTTER_WINDOWING_X11
   ClutterStageX11Class parent_class;
-#else
+#elif defined(CLUTTER_WINDOWING_GDK)
   GObjectClass parent_class;
 #endif
 };
