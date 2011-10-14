@@ -62,7 +62,9 @@ typedef struct _ClutterActorMeta        ClutterActorMeta;
 
 typedef struct _ClutterAlpha            ClutterAlpha;
 typedef struct _ClutterAnimatable       ClutterAnimatable; /* dummy */
+typedef struct _ClutterAnimationContext ClutterAnimationContext;
 typedef struct _ClutterAnimator         ClutterAnimator;
+typedef struct _ClutterInterval         ClutterInterval;
 typedef struct _ClutterState            ClutterState;
 typedef struct _ClutterTimeline         ClutterTimeline;
 

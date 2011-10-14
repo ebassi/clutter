@@ -37,6 +37,7 @@
 #include "clutter-align-constraint.h"
 #include "clutter-alpha.h"
 #include "clutter-animatable.h"
+#include "clutter-animation-context.h"
 #include "clutter-animation.h"
 #include "clutter-animator.h"
 #include "clutter-backend.h"

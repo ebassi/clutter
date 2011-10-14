@@ -1054,6 +1054,11 @@ typedef enum {
   CLUTTER_PATH_REL_CURVE_TO = CLUTTER_PATH_CURVE_TO | CLUTTER_PATH_RELATIVE
 } ClutterPathNodeType;
 
+typedef enum {
+  CLUTTER_ANIMATION_QUEUE_REDRAW   = 1 << 0,
+  CLUTTER_ANIMATION_QUEUE_RELAYOUT = 1 << 1
+} ClutterAnimationHint;
+
 G_END_DECLS
 
 #endif /* __CLUTTER_ENUMS_H__ */

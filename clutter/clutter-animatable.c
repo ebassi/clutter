@@ -50,6 +50,7 @@
 #endif
 
 #include "clutter-animatable.h"
+#include "clutter-animation-context.h"
 #include "clutter-debug.h"
 #include "clutter-private.h"
 
@@ -277,4 +278,51 @@ clutter_animatable_interpolate_value (ClutterAnimatable *animatable,
     }
   else
     return clutter_interval_compute_value (interval, progress, value);
+}
+
+ClutterAnimationContext *
+clutter_animatable_create_context (ClutterAnimatable *animatable,
+                                   gulong             mode,
+                                   guint              duration)
+{
+  ClutterAnimatableIface *iface;
+
+  g_return_val_if_fail (CLUTTER_IS_ANIMATABLE (animatable), NULL);
+
+  iface = CLUTTER_ANIMATABLE_GET_IFACE (animatable);
+  if (iface->create_context != NULL)
+    return iface->create_context (animatable, mode, duration);
+
+  return NULL;
+}
+
+gboolean
+clutter_animatable_push_context (ClutterAnimatable       *animatable,
+                                 ClutterAnimationContext *context)
+{
+  ClutterAnimatableIface *iface;
+
+  g_return_val_if_fail (CLUTTER_IS_ANIMATABLE (animatable), FALSE);
+  g_return_val_if_fail (CLUTTER_IS_ANIMATION_CONTEXT (context), FALSE);
+  g_return_val_if_fail (animatable == clutter_animation_context_get_animatable (context), FALSE);
+
+  iface = CLUTTER_ANIMATABLE_GET_IFACE (animatable);
+  if (iface->push_context != NULL)
+    return iface->push_context (animatable, context);
+
+  return FALSE;
+}
+
+ClutterAnimationContext *
+clutter_animatable_pop_context (ClutterAnimatable *animatable)
+{
+  ClutterAnimatableIface *iface;
+
+  g_return_val_if_fail (CLUTTER_IS_ANIMATABLE (animatable), NULL);
+
+  iface = CLUTTER_ANIMATABLE_GET_IFACE (animatable);
+  if (iface->pop_context != NULL)
+    return iface->pop_context (animatable);
+
+  return NULL;
 }

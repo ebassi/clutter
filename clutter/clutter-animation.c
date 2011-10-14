@@ -149,9 +149,11 @@
 #include <glib-object.h>
 #include <gobject/gvaluecollector.h>
 
+#include "clutter-animation.h"
+
 #include "clutter-alpha.h"
 #include "clutter-animatable.h"
-#include "clutter-animation.h"
+#include "clutter-animation-context.h"
 #include "clutter-debug.h"
 #include "clutter-enum-types.h"
 #include "clutter-interval.h"
@@ -243,6 +245,8 @@ clutter_animation_real_completed (ClutterAnimation *self)
   if (CLUTTER_IS_ANIMATABLE (priv->object))
     animatable = CLUTTER_ANIMATABLE (priv->object);
 
+  g_object_freeze_notify (priv->object);
+
   /* explicitly set the final state of the animation */
   CLUTTER_NOTE (ANIMATION, "Set final state on object [%p]", priv->object);
   g_hash_table_iter_init (&iter, priv->properties);
@@ -262,6 +266,17 @@ clutter_animation_real_completed (ClutterAnimation *self)
       else
         g_object_set_property (priv->object, p_name, p_value);
     }
+
+  if (animatable != NULL)
+    {
+      ClutterAnimationContext *context;
+
+      context = clutter_animatable_pop_context (animatable);
+      if (context != NULL)
+        g_object_unref (context);
+    }
+
+  g_object_thaw_notify (priv->object);
 
   /* at this point, if this animation was created by clutter_actor_animate()
    * and friends, the animation will be attached to the object's data; since
@@ -1060,6 +1075,34 @@ static void
 on_timeline_started (ClutterTimeline  *timeline,
                      ClutterAnimation *animation)
 {
+  if (CLUTTER_IS_ANIMATABLE (animation->priv->object))
+    {
+      ClutterAnimationPrivate *priv = animation->priv;
+      ClutterAnimatable *animatable = CLUTTER_ANIMATABLE (priv->object);
+      gulong mode = clutter_alpha_get_mode (priv->alpha);
+      guint duration = clutter_timeline_get_duration (timeline);
+      ClutterAnimationContext *context;
+      GHashTableIter iter;
+      gpointer key, value;
+
+      context = clutter_animatable_create_context (animatable, mode, duration);
+      if (context == NULL)
+        goto out;
+
+      g_hash_table_iter_init (&iter, priv->properties);
+      while (g_hash_table_iter_next (&iter, &key, &value))
+        {
+          const gchar *name = key;
+          ClutterInterval *interval = value;
+
+          clutter_animation_context_add_property (context, name, interval);
+        }
+
+      if (!clutter_animatable_push_context (animatable, context))
+        g_object_unref (context);
+    }
+
+out:
   g_signal_emit (animation, animation_signals[STARTED], 0);
 }
 

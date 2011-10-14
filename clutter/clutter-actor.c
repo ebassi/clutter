@@ -293,6 +293,7 @@
 #include "clutter-action.h"
 #include "clutter-actor-meta-private.h"
 #include "clutter-animatable.h"
+#include "clutter-animation-context.h"
 #include "clutter-behaviour.h"
 #include "clutter-constraint.h"
 #include "clutter-container.h"
@@ -482,6 +483,8 @@ struct _ClutterActorPrivate
   ClutterPaintVolume last_paint_volume;
 
   ClutterStageQueueRedrawEntry *queue_redraw_entry;
+
+  GQueue *animation_contexts;
 
   /* bitfields */
   guint position_set                : 1;
@@ -726,6 +729,15 @@ _clutter_actor_get_debug_name (ClutterActor *actor)
 {
   return actor->priv->name != NULL ? actor->priv->name
                                    : G_OBJECT_TYPE_NAME (actor);
+}
+
+static gboolean
+clutter_actor_is_animating (ClutterActor *self)
+{
+  ClutterActorPrivate *priv = self->priv;
+
+  return priv->animation_contexts != NULL &&
+         g_queue_get_length (priv->animation_contexts) != 0;
 }
 
 #ifdef CLUTTER_ENABLE_DEBUG
@@ -6365,6 +6377,22 @@ clutter_actor_get_fixed_position_set (ClutterActor *self)
   return self->priv->position_set;
 }
 
+static inline void
+clutter_actor_set_fixed_x (ClutterActor *self,
+                           gfloat        new_val)
+{
+  self->priv->fixed_x = new_val;
+  self->priv->position_set = TRUE;
+}
+
+static inline void
+clutter_actor_set_fixed_y (ClutterActor *self,
+                           gfloat        new_val)
+{
+  self->priv->fixed_y = new_val;
+  self->priv->position_set = TRUE;
+}
+
 /**
  * clutter_actor_set_fixed_position_set:
  * @self: A #ClutterActor
@@ -7163,11 +7191,24 @@ clutter_actor_set_x (ClutterActor *self,
 
   clutter_actor_store_old_geometry (self, &old);
 
-  priv->fixed_x = x;
+  clutter_actor_set_fixed_x (self, x);
+
+  if (clutter_actor_is_animating (self))
+    {
+      ClutterAnimationContext *context;
+      GParamSpec *pspec = obj_props[PROP_X];
+
+      context = g_queue_peek_head (priv->animation_contexts);
+      if (clutter_animation_context_has_property (context, pspec->name))
+        {
+          /* changing X will cause a relayout */
+          clutter_animation_context_add_hints (context, CLUTTER_ANIMATION_QUEUE_RELAYOUT);
+          return;
+        }
+    }
+
   clutter_actor_set_fixed_position_set (self, TRUE);
-
   clutter_actor_notify_if_geometry_changed (self, &old);
-
   clutter_actor_queue_relayout (self);
 }
 
@@ -7199,11 +7240,23 @@ clutter_actor_set_y (ClutterActor *self,
 
   clutter_actor_store_old_geometry (self, &old);
 
-  priv->fixed_y = y;
+  clutter_actor_set_fixed_y (self, y);
+
+  if (clutter_actor_is_animating (self))
+    {
+      ClutterAnimationContext *context;
+      GParamSpec *pspec = obj_props[PROP_Y];
+
+      context = g_queue_peek_head (priv->animation_contexts);
+      if (clutter_animation_context_has_property (context, pspec->name))
+        {
+          clutter_animation_context_add_hints (context, CLUTTER_ANIMATION_QUEUE_RELAYOUT);
+          return;
+        }
+    }
+
   clutter_actor_set_fixed_position_set (self, TRUE);
-
   clutter_actor_notify_if_geometry_changed (self, &old);
-
   clutter_actor_queue_relayout (self);
 }
 
@@ -9589,12 +9642,68 @@ clutter_actor_set_final_state (ClutterAnimatable *animatable,
   g_free (p_name);
 }
 
+static ClutterAnimationContext *
+clutter_actor_create_animation_context (ClutterAnimatable *animatable,
+                                        gulong             mode,
+                                        guint              duration)
+{
+  ClutterAnimationContext *context;
+
+  context = clutter_animation_context_new (animatable, mode, duration);
+  g_assert (CLUTTER_IS_ANIMATION_CONTEXT (context));
+
+  return context;
+}
+
+static gboolean
+clutter_actor_push_animation_context (ClutterAnimatable       *animatable,
+                                      ClutterAnimationContext *context)
+{
+  ClutterActorPrivate *priv = CLUTTER_ACTOR (animatable)->priv;
+
+  if (priv->animation_contexts == NULL)
+    priv->animation_contexts = g_queue_new ();
+
+  g_queue_push_head (priv->animation_contexts, context);
+
+  return TRUE;
+}
+
+static ClutterAnimationContext *
+clutter_actor_pop_animation_context (ClutterAnimatable *animatable)
+{
+  ClutterActorPrivate *priv = CLUTTER_ACTOR (animatable)->priv;
+  ClutterAnimationContext *context;
+  ClutterAnimationHint hints;
+
+  if (priv->animation_contexts == NULL)
+    return NULL;
+
+  context = g_queue_pop_head (priv->animation_contexts);
+  if (context == NULL)
+    return NULL;
+
+  hints = clutter_animation_context_get_hints (context);
+
+  if (hints & CLUTTER_ANIMATION_QUEUE_RELAYOUT)
+    clutter_actor_queue_relayout (CLUTTER_ACTOR (animatable));
+
+  if (hints & CLUTTER_ANIMATION_QUEUE_REDRAW)
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (animatable));
+
+  return context;
+}
+
 static void
 clutter_animatable_iface_init (ClutterAnimatableIface *iface)
 {
   iface->find_property = clutter_actor_find_property;
   iface->get_initial_state = clutter_actor_get_initial_state;
   iface->set_final_state = clutter_actor_set_final_state;
+
+  iface->create_context = clutter_actor_create_animation_context;
+  iface->push_context = clutter_actor_push_animation_context;
+  iface->pop_context = clutter_actor_pop_animation_context;
 }
 
 /**

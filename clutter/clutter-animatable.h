@@ -93,6 +93,13 @@ struct _ClutterAnimatableIface
                                      ClutterInterval   *interval,
                                      gdouble            progress,
                                      GValue            *value);
+
+  ClutterAnimationContext *(* create_context) (ClutterAnimatable       *animatable,
+                                               gulong                   mode,
+                                               guint                    duration);
+  gboolean                 (* push_context)   (ClutterAnimatable       *animatable,
+                                               ClutterAnimationContext *context);
+  ClutterAnimationContext *(* pop_context)    (ClutterAnimatable       *animatable);
 };
 
 GType clutter_animatable_get_type (void) G_GNUC_CONST;
@@ -121,6 +128,13 @@ gboolean    clutter_animatable_interpolate_value (ClutterAnimatable *animatable,
                                                   ClutterInterval   *interval,
                                                   gdouble            progress,
                                                   GValue            *value);
+
+ClutterAnimationContext *       clutter_animatable_create_context       (ClutterAnimatable       *animatable,
+                                                                         gulong                   mode,
+                                                                         guint                    duration);
+gboolean                        clutter_animatable_push_context         (ClutterAnimatable       *animatable,
+                                                                         ClutterAnimationContext *context);
+ClutterAnimationContext *       clutter_animatable_pop_context          (ClutterAnimatable       *animatable);
 
 G_END_DECLS
 
