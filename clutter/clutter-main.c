@@ -219,6 +219,14 @@ static const GDebugKey clutter_profile_keys[] = {
 };
 #endif /* CLUTTER_ENABLE_DEBUG */
 
+typedef struct _ClutterRepaintFunction
+{
+  guint id;
+  GSourceFunc func;
+  gpointer data;
+  GDestroyNotify notify;
+} ClutterRepaintFunction;
+
 static void
 clutter_threads_impl_lock (void)
 {
@@ -449,6 +457,77 @@ clutter_config_read (void)
     clutter_config_read_from_file (config_path);
 
   g_free (config_path);
+}
+
+
+/*< private >
+ * clutter_clear_events_queue:
+ *
+ * Clears the events queue stored in the main context.
+ */
+void
+_clutter_clear_events_queue (void)
+{
+  ClutterMainContext *context = _clutter_context_get_default ();
+
+  if (context->events_queue != NULL)
+    {
+      g_queue_foreach (context->events_queue,
+                       (GFunc) clutter_event_free,
+                       NULL);
+      g_queue_free (context->events_queue);
+      context->events_queue = NULL;
+    }
+}
+
+void
+_clutter_clear_events_queue_for_stage (ClutterStage *stage)
+{
+  ClutterMainContext *context = _clutter_context_get_default ();
+  GList *l, *next;
+
+  if (context->events_queue == NULL)
+    return;
+
+  /* Remove any pending events for this stage from the event queue */
+  for (l = context->events_queue->head; l; l = next)
+    {
+      ClutterEvent *event = l->data;
+
+      next = l->next;
+
+      if (event->any.stage == stage)
+        {
+          g_queue_delete_link (context->events_queue, l);
+          clutter_event_free (event);
+        }
+    }
+}
+
+static void
+_clutter_clear_repaint_funcs (void)
+{
+  ClutterMainContext *context = _clutter_context_get_default ();
+  GList *invoke_list, *l;
+
+  if (context->repaint_funcs == NULL)
+    return;
+
+  /* steal the list */
+  invoke_list = context->repaint_funcs;
+  context->repaint_funcs = NULL;
+
+  for (l = invoke_list; l != NULL; l = l->next)
+    {
+      ClutterRepaintFunction *repaint_func = l->data;
+
+      if (repaint_func->notify != NULL)
+        repaint_func->notify (repaint_func->data);
+
+      g_slice_free (ClutterRepaintFunction, repaint_func);
+    }
+
+  g_list_free (invoke_list);
 }
 
 /**
@@ -1404,6 +1483,56 @@ clutter_context_get_default_unlocked (void)
     }
 
   return ClutterCntx;
+}
+
+/**
+ * clutter_shutdown:
+ *
+ * Clears the Clutter state.
+ *
+ * This function should only be called at the end of an application life
+ * cycle, prior to returning control to the operating system.
+ *
+ * This function should only be called by application code, and only on
+ * platforms that require clearing the graphics system.
+ *
+ * <warning>Calling any Clutter function after calling clutter_shutdown()
+ * yields undefined results. No guarantee is made on re-initializing
+ * Clutter after calling this function.</warning>
+ *
+ * <note>This function does not guarantee to clear one-off memory allocations
+ * made by Clutter or by its dependencies, and thus it should not be relied
+ * on when tracking memory usage using tools like Valgrind.</note>
+ *
+ * Since: 1.10
+ */
+void
+clutter_shutdown (void)
+{
+  ClutterMainContext *context = clutter_context_get_default_unlocked ();
+
+  if (context->pango_context != NULL)
+    g_object_unref (context->pango_context);
+
+  if (context->font_map != NULL)
+    g_object_unref (context->font_map);
+
+  _clutter_clear_repaint_funcs ();
+
+  _clutter_clear_events_queue ();
+
+  _clutter_id_pool_free (context->id_pool);
+
+#ifdef CLUTTER_ENABLE_DEBUG
+  g_timer_destroy (context->timer);
+#endif
+
+  g_object_unref (context->stage_manager);
+  g_object_unref (context->settings);
+  g_object_unref (context->backend);
+  g_free (context);
+
+  ClutterCntx = NULL;
 }
 
 ClutterMainContext *
@@ -3307,14 +3436,6 @@ clutter_get_font_map (void)
   return PANGO_FONT_MAP (clutter_context_get_pango_fontmap ());
 }
 
-typedef struct _ClutterRepaintFunction
-{
-  guint id;
-  GSourceFunc func;
-  gpointer data;
-  GDestroyNotify notify;
-} ClutterRepaintFunction;
-
 /**
  * clutter_threads_remove_repaint_func:
  * @handle_id: an unsigned integer greater than zero
@@ -3527,26 +3648,6 @@ clutter_get_default_text_direction (void)
   return clutter_text_direction;
 }
 
-/*< private >
- * clutter_clear_events_queue:
- *
- * Clears the events queue stored in the main context.
- */
-void
-_clutter_clear_events_queue (void)
-{
-  ClutterMainContext *context = _clutter_context_get_default ();
-
-  if (context->events_queue != NULL)
-    {
-      g_queue_foreach (context->events_queue,
-                       (GFunc) clutter_event_free,
-                       NULL);
-      g_queue_free (context->events_queue);
-      context->events_queue = NULL;
-    }
-}
-
 guint32
 _clutter_context_acquire_id (gpointer key)
 {
@@ -3561,30 +3662,6 @@ _clutter_context_release_id (guint32 id_)
   ClutterMainContext *context = _clutter_context_get_default ();
 
   _clutter_id_pool_remove (context->id_pool, id_);
-}
-
-void
-_clutter_clear_events_queue_for_stage (ClutterStage *stage)
-{
-  ClutterMainContext *context = _clutter_context_get_default ();
-  GList *l, *next;
-
-  if (context->events_queue == NULL)
-    return;
-
-  /* Remove any pending events for this stage from the event queue */
-  for (l = context->events_queue->head; l; l = next)
-    {
-      ClutterEvent *event = l->data;
-
-      next = l->next;
-
-      if (event->any.stage == stage)
-        {
-          g_queue_delete_link (context->events_queue, l);
-          clutter_event_free (event);
-        }
-    }
 }
 
 ClutterPickMode
