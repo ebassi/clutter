@@ -293,7 +293,10 @@
 #include "config.h"
 #endif
 
+/* for ClutterShader */
 #define CLUTTER_DISABLE_DEPRECATION_WARNINGS
+
+#include <math.h>
 
 #include "cogl/cogl.h"
 
@@ -377,22 +380,6 @@ typedef enum {
                               * used just before unmapping parent.
                               */
 } MapStateChange;
-
-typedef struct _LayoutInfo      LayoutInfo;
-struct _LayoutInfo
-{
-  /* fixed position coordinates */
-  float fixed_x;
-  float fixed_y;
-
-  ClutterMargin margin;
-
-  guint x_expand : 1;
-  guint y_expand : 1;
-
-  guint x_align : 4;
-  guint y_align : 4;
-};
 
 struct _ClutterActorPrivate
 {
@@ -725,9 +712,6 @@ static void _clutter_actor_get_relative_transformation_matrix (ClutterActor *sel
                                                                CoglMatrix *matrix);
 
 static ClutterPaintVolume *_clutter_actor_get_paint_volume_mutable (ClutterActor *self);
-
-static LayoutInfo *      clutter_actor_get_layout_info             (ClutterActor *self);
-static const LayoutInfo *clutter_actor_get_layout_info_or_defaults (ClutterActor *self);
 
 /* Helper macro which translates by the anchor coord, applies the
    given transformation and then translates back */
@@ -1941,6 +1925,10 @@ clutter_actor_real_allocate (ClutterActor           *self,
 
   priv->allocation = *box;
   priv->allocation_flags = flags;
+
+  /* allocation is authoritative */
+  priv->needs_width_request = FALSE;
+  priv->needs_height_request = FALSE;
   priv->needs_allocation = FALSE;
 
   /* we allocate our children before we notify changes in our geometry,
@@ -3609,16 +3597,18 @@ clutter_actor_get_property (GObject    *object,
 
     case PROP_FIXED_X:
       {
-        LayoutInfo *info = clutter_actor_get_layout_info (actor);
+        const ClutterLayoutInfo *info;
 
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_float (value, info->fixed_x);
       }
       break;
 
     case PROP_FIXED_Y:
       {
-        LayoutInfo *info = clutter_actor_get_layout_info (actor);
+        const ClutterLayoutInfo *info;
 
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_float (value, info->fixed_y);
       }
       break;
@@ -3853,80 +3843,72 @@ clutter_actor_get_property (GObject    *object,
 
     case PROP_X_EXPAND:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_boolean (value, info->x_expand);
       }
       break;
 
     case PROP_Y_EXPAND:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_boolean (value, info->y_expand);
       }
       break;
 
     case PROP_X_ALIGN:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_enum (value, info->x_align);
       }
       break;
 
     case PROP_Y_ALIGN:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_enum (value, info->y_align);
       }
       break;
 
     case PROP_MARGIN_TOP:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_float (value, info->margin.top);
       }
       break;
 
     case PROP_MARGIN_BOTTOM:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_float (value, info->margin.bottom);
       }
       break;
 
     case PROP_MARGIN_LEFT:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_float (value, info->margin.left);
       }
       break;
 
     case PROP_MARGIN_RIGHT:
       {
-        const LayoutInfo *info;
+        const ClutterLayoutInfo *info;
 
-        info = clutter_actor_get_layout_info_or_defaults (actor);
-
+        info = _clutter_actor_get_layout_info_or_defaults (actor);
         g_value_set_float (value, info->margin.right);
       }
       break;
@@ -6483,6 +6465,189 @@ clutter_actor_get_allocation_geometry (ClutterActor    *self,
   geom->height = CLUTTER_NEARBYINT (clutter_actor_box_get_height (&box));
 }
 
+static ClutterActorAlign
+effective_align (ClutterActorAlign    align,
+                 ClutterTextDirection direction)
+{
+  ClutterActorAlign res;
+
+  switch (align)
+    {
+    case CLUTTER_ACTOR_ALIGN_START:
+      res = (direction == CLUTTER_TEXT_DIRECTION_RTL)
+          ? CLUTTER_ACTOR_ALIGN_END
+          : CLUTTER_ACTOR_ALIGN_START;
+      break;
+
+    case CLUTTER_ACTOR_ALIGN_END:
+      res = (direction == CLUTTER_TEXT_DIRECTION_RTL)
+          ? CLUTTER_ACTOR_ALIGN_START
+          : CLUTTER_ACTOR_ALIGN_END;
+      break;
+
+    default:
+      res = align;
+      break;
+    }
+
+  return res;
+}
+
+static inline void
+adjust_for_margin (float  margin_start,
+                   float  margin_end,
+                   float *minimum_size,
+                   float *natural_size,
+                   float *allocated_start,
+                   float *allocated_end)
+{
+  *minimum_size -= (margin_start + margin_end);
+  *natural_size -= (margin_start + margin_end);
+  *allocated_start += margin_start;
+  *allocated_end -= margin_end;
+}
+
+static inline void
+adjust_for_alignment (ClutterActorAlign  alignment,
+                      float              natural_size,
+                      float             *allocated_start,
+                      float             *allocated_end)
+{
+  float allocated_size = *allocated_end - *allocated_start;
+
+  switch (alignment)
+    {
+    case CLUTTER_ACTOR_ALIGN_FILL:
+      /* do nothing */
+      break;
+
+    case CLUTTER_ACTOR_ALIGN_START:
+      /* keep start */
+      *allocated_end = *allocated_start + MIN (natural_size, allocated_size);
+      break;
+
+    case CLUTTER_ACTOR_ALIGN_END:
+      if (allocated_size > natural_size)
+        {
+          *allocated_start += (allocated_size - natural_size);
+          *allocated_end = *allocated_start + natural_size;
+        }
+      break;
+
+    case CLUTTER_ACTOR_ALIGN_CENTER:
+      if (allocated_size > natural_size)
+        {
+          *allocated_start += ceilf ((allocated_size - natural_size) / 2);
+          *allocated_end = *allocated_start + MIN (allocated_size, natural_size);
+        }
+      break;
+    }
+}
+
+/*< private >
+ * clutter_actor_adjust_allocation:
+ * @self: a #ClutterActor
+ * @allocation: (inout): the allocation to adjust
+ *
+ * Adjusts the passed allocation box taking into account the actor's
+ * layout information, like alignment, expansion, and margin.
+ */
+static void
+clutter_actor_adjust_allocation (ClutterActor    *self,
+                                 ClutterActorBox *allocation)
+{
+  ClutterActorPrivate *priv = self->priv;
+  ClutterActorBox adj_allocation;
+  float alloc_width, alloc_height;
+  float min_width, min_height;
+  float nat_width, nat_height;
+  ClutterRequestMode req_mode;
+  ClutterTextDirection text_dir;
+  const ClutterLayoutInfo *info;
+
+  adj_allocation = *allocation;
+
+  clutter_actor_box_get_size (allocation, &alloc_width, &alloc_height);
+
+  /* we want to hit the cache, so we use the public API */
+  req_mode = clutter_actor_get_request_mode (self);
+
+  if (req_mode == CLUTTER_REQUEST_HEIGHT_FOR_WIDTH)
+    {
+      clutter_actor_get_preferred_width (self, -1,
+                                         &min_width,
+                                         &nat_width);
+      clutter_actor_get_preferred_height (self, alloc_width,
+                                          &min_height,
+                                          &nat_height);
+    }
+  else if (req_mode == CLUTTER_REQUEST_WIDTH_FOR_HEIGHT)
+    {
+      clutter_actor_get_preferred_height (self, -1,
+                                          &min_height,
+                                          &nat_height);
+      clutter_actor_get_preferred_height (self, alloc_height,
+                                          &min_width,
+                                          &nat_width);
+    }
+
+#ifdef CLUTTER_ENABLE_DEBUG
+  /* warn about underallocations */
+  if ((min_width > alloc_width) || (min_height > alloc_height))
+    {
+      g_warning (G_STRLOC ": The actor '%s' is getting an allocation "
+                 "of %.2f x %.2f from its parent actor '%s', but its "
+                 "requested minimum size is of %.2f x %.2f",
+                 _clutter_actor_get_debug_name (self),
+                 alloc_width, alloc_height,
+                 _clutter_actor_get_debug_name (priv->parent_actor),
+                 min_width, min_height);
+    }
+#endif
+
+  info = _clutter_actor_get_layout_info_or_defaults (self);
+  text_dir = clutter_actor_get_text_direction (self);
+
+  CLUTTER_NOTE (LAYOUT, "Adjusting allocated X and width");
+  adjust_for_margin (info->margin.left, info->margin.right,
+                     &min_width, &nat_width,
+                     &adj_allocation.x1, &adj_allocation.x2);
+  adjust_for_alignment (effective_align (info->x_align, text_dir),
+                        nat_width,
+                        &adj_allocation.x1, &adj_allocation.x2);
+
+  CLUTTER_NOTE (LAYOUT, "Adjusting allocated Y and height");
+  adjust_for_margin (info->margin.top, info->margin.bottom,
+                     &min_height, &nat_height,
+                     &adj_allocation.y1, &adj_allocation.y2);
+  adjust_for_alignment (info->y_align,
+                        nat_height,
+                        &adj_allocation.y1, &adj_allocation.y2);
+
+  /* we maintain the invariant that an allocation cannot be adjusted
+   * to be outside the parent-given box
+   */
+  if (adj_allocation.x1 < allocation->x1 ||
+      adj_allocation.y1 < allocation->y1 ||
+      adj_allocation.x2 > allocation->x2 ||
+      adj_allocation.y2 > allocation->y2)
+    {
+      g_warning (G_STRLOC ": The actor '%s' tried to adjust its allocation "
+                 "to { %.2f, %.2f, %.2f, %.2f }, which is outside of its "
+                 "original allocation of { %.2f, %.2f, %.2f, %.2f }",
+                 _clutter_actor_get_debug_name (self),
+                 adj_allocation.x1, adj_allocation.y1,
+                 adj_allocation.x2 - adj_allocation.x1,
+                 adj_allocation.y2 - adj_allocation.y1,
+                 allocation->x1, allocation->y1,
+                 allocation->x2 - allocation->x1,
+                 allocation->y2 - allocation->y1);
+      return;
+    }
+
+  *allocation = adj_allocation;
+}
+
 /**
  * clutter_actor_allocate:
  * @self: A #ClutterActor
@@ -6508,7 +6673,7 @@ clutter_actor_allocate (ClutterActor           *self,
 {
   ClutterActorPrivate *priv;
   ClutterActorClass *klass;
-  ClutterActorBox alloc;
+  ClutterActorBox old_allocation, real_allocation;
   gboolean origin_changed, child_moved, size_changed;
   gboolean stage_allocation_changed;
 
@@ -6523,8 +6688,13 @@ clutter_actor_allocate (ClutterActor           *self,
 
   priv = self->priv;
 
-  alloc = *box;
+  old_allocation = priv->allocation;
+  real_allocation = *box;
 
+  /* constraints are allowed to modify the allocation prior to
+   * the ::allocate() implementation, so that if the allocation
+   * did not change, we can bail out early
+   */
   if (priv->constraints != NULL)
     {
       const GList *constraints, *l;
@@ -6536,17 +6706,37 @@ clutter_actor_allocate (ClutterActor           *self,
           ClutterActorMeta *meta = l->data;
 
           if (clutter_actor_meta_get_enabled (meta))
-            _clutter_constraint_update_allocation (constraint, self, &alloc);
+            {
+              _clutter_constraint_update_allocation (constraint,
+                                                     self,
+                                                     &real_allocation);
+            }
         }
     }
 
+  /* adjust the allocation depending on the align/expand/margin properties */
+  clutter_actor_adjust_allocation (self, &real_allocation);
+
+  if (real_allocation.x2 < real_allocation.x1 ||
+      real_allocation.y2 < real_allocation.y1)
+    {
+      g_warning (G_STRLOC ": Actor '%s' tried to allocate a size of %.2f x %.2f",
+                 _clutter_actor_get_debug_name (self),
+                 real_allocation.x2 - real_allocation.x1,
+                 real_allocation.y2 - real_allocation.y1);
+    }
+
+  /* we allow 0-sized actors, but not negative-sized ones */
+  real_allocation.x2 = MAX (real_allocation.x2, real_allocation.x1);
+  real_allocation.y2 = MAX (real_allocation.y2, real_allocation.y1);
+
   origin_changed = (flags & CLUTTER_ABSOLUTE_ORIGIN_CHANGED);
 
-  child_moved = (alloc.x1 != priv->allocation.x1 ||
-                 alloc.y1 != priv->allocation.y1);
+  child_moved = (real_allocation.x1 != old_allocation.x1 ||
+                 real_allocation.y1 != old_allocation.y1);
 
-  size_changed = (alloc.x2 != priv->allocation.x2 ||
-                  alloc.y2 != priv->allocation.y2);
+  size_changed = (real_allocation.x2 != old_allocation.x2 ||
+                  real_allocation.y2 != old_allocation.y2);
 
   if (origin_changed || child_moved || size_changed)
     stage_allocation_changed = TRUE;
@@ -6565,7 +6755,6 @@ clutter_actor_allocate (ClutterActor           *self,
    * actors that did not queue relayout and were
    * not moved.
    */
-
   if (!priv->needs_allocation && !stage_allocation_changed)
     {
       CLUTTER_NOTE (LAYOUT, "No allocation needed");
@@ -6584,7 +6773,7 @@ clutter_actor_allocate (ClutterActor           *self,
   CLUTTER_SET_PRIVATE_FLAGS (self, CLUTTER_IN_RELAYOUT);
 
   klass = CLUTTER_ACTOR_GET_CLASS (self);
-  klass->allocate (self, &alloc, flags);
+  klass->allocate (self, &real_allocation, flags);
 
   CLUTTER_UNSET_PRIVATE_FLAGS (self, CLUTTER_IN_RELAYOUT);
 
@@ -6740,13 +6929,12 @@ clutter_actor_move_by (ClutterActor *self,
 		       gfloat        dx,
 		       gfloat        dy)
 {
-  LayoutInfo *info;
+  const ClutterLayoutInfo *info;
   gfloat x, y;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = clutter_actor_get_layout_info (self);
-
+  info = _clutter_actor_get_layout_info_or_defaults (self);
   x = info->fixed_x;
   y = info->fixed_y;
 
@@ -7483,13 +7671,13 @@ clutter_actor_set_x (ClutterActor *self,
 {
   ClutterActorBox old = { 0, };
   ClutterActorPrivate *priv;
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
   priv = self->priv;
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (priv->position_set && info->fixed_x == x)
     return;
@@ -7522,13 +7710,13 @@ clutter_actor_set_y (ClutterActor *self,
 {
   ClutterActorBox old = { 0, };
   ClutterActorPrivate *priv;
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
   priv = self->priv;
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (priv->position_set && info->fixed_y == y)
     return;
@@ -7578,7 +7766,9 @@ clutter_actor_get_x (ClutterActor *self)
     {
       if (priv->position_set)
         {
-          LayoutInfo *info = clutter_actor_get_layout_info (self);
+          const ClutterLayoutInfo *info;
+
+          info = _clutter_actor_get_layout_info_or_defaults (self);
 
           return info->fixed_x;
         }
@@ -7624,7 +7814,9 @@ clutter_actor_get_y (ClutterActor *self)
     {
       if (priv->position_set)
         {
-          LayoutInfo *info = clutter_actor_get_layout_info (self);
+          const ClutterLayoutInfo *info;
+
+          info = _clutter_actor_get_layout_info_or_defaults (self);
 
           return info->fixed_y;
         }
@@ -13239,7 +13431,7 @@ clutter_actor_get_layout_manager (ClutterActor *self)
   return self->priv->layout_manager;
 }
 
-static const LayoutInfo default_layout_info = {
+static const ClutterLayoutInfo default_layout_info = {
   0.f,                          /* fixed-x */
   0.f,                          /* fixed-y */
   { 0, 0, 0, 0 },               /* margin */
@@ -13253,34 +13445,34 @@ static void
 layout_info_free (gpointer data)
 {
   if (G_LIKELY (data != NULL))
-    g_slice_free (LayoutInfo, data);
+    g_slice_free (ClutterLayoutInfo, data);
 }
 
 /*< private >
- * clutter_actor_get_layout_info:
+ * _clutter_actor_get_layout_info:
  * @self: a #ClutterActor
  *
- * Retrieves a pointer to the LayoutInfo structure.
+ * Retrieves a pointer to the ClutterLayoutInfo structure.
  *
- * If the actor does not have a LayoutInfo associated to it, one
+ * If the actor does not have a ClutterLayoutInfo associated to it, one
  * will be created and initialized to the default values.
  *
  * This function should be used for setters.
  *
- * For getters, you should use clutter_actor_get_layout_info_or_defaults()
+ * For getters, you should use _clutter_actor_get_layout_info_or_defaults()
  * instead.
  *
- * Return value: (transfer none): a pointer to the LayoutInfo structure
+ * Return value: (transfer none): a pointer to the ClutterLayoutInfo structure
  */
-static LayoutInfo *
-clutter_actor_get_layout_info (ClutterActor *self)
+ClutterLayoutInfo *
+_clutter_actor_get_layout_info (ClutterActor *self)
 {
-  LayoutInfo *retval;
+  ClutterLayoutInfo *retval;
 
   retval = g_object_get_qdata (G_OBJECT (self), quark_actor_layout_info);
   if (retval == NULL)
     {
-      retval = g_slice_new (LayoutInfo);
+      retval = g_slice_new (ClutterLayoutInfo);
 
       *retval = default_layout_info;
 
@@ -13293,22 +13485,22 @@ clutter_actor_get_layout_info (ClutterActor *self)
 }
 
 /*< private >
- * clutter_actor_get_layout_info_or_defaults:
+ * _clutter_actor_get_layout_info_or_defaults:
  * @self: a #ClutterActor
  *
- * Retrieves the LayoutInfo structure associated to an actor.
+ * Retrieves the ClutterLayoutInfo structure associated to an actor.
  *
- * If the actor does not have a LayoutInfo structure associated to it,
+ * If the actor does not have a ClutterLayoutInfo structure associated to it,
  * then the default structure will be returned.
  *
  * This function should only be used for getters.
  *
- * Return value: a const pointer to the LayoutInfo structure
+ * Return value: a const pointer to the ClutterLayoutInfo structure
  */
-static const LayoutInfo *
-clutter_actor_get_layout_info_or_defaults (ClutterActor *self)
+const ClutterLayoutInfo *
+_clutter_actor_get_layout_info_or_defaults (ClutterActor *self)
 {
-  const LayoutInfo *info;
+  const ClutterLayoutInfo *info;
 
   info = g_object_get_qdata (G_OBJECT (self), quark_actor_layout_info);
   if (info == NULL)
@@ -13321,13 +13513,13 @@ void
 clutter_actor_set_x_expand (ClutterActor *self,
                             gboolean      x_expand)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
   x_expand = !!x_expand;
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->x_expand != x_expand)
     {
@@ -13344,20 +13536,20 @@ clutter_actor_get_x_expand (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->x_expand;
+  return _clutter_actor_get_layout_info_or_defaults (self)->x_expand;
 }
 
 void
 clutter_actor_set_y_expand (ClutterActor *self,
                             gboolean      y_expand)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
   y_expand = !!y_expand;
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->y_expand != y_expand)
     {
@@ -13374,18 +13566,18 @@ clutter_actor_get_y_expand (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->y_expand;
+  return _clutter_actor_get_layout_info_or_defaults (self)->y_expand;
 }
 
 void
 clutter_actor_set_x_align (ClutterActor      *self,
                            ClutterActorAlign  x_align)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->x_align != x_align)
     {
@@ -13402,18 +13594,18 @@ clutter_actor_get_x_align (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_ACTOR_ALIGN_FILL);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->x_align;
+  return _clutter_actor_get_layout_info_or_defaults (self)->x_align;
 }
 
 void
 clutter_actor_set_y_align (ClutterActor      *self,
                            ClutterActorAlign  y_align)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->y_align != y_align)
     {
@@ -13430,7 +13622,7 @@ clutter_actor_get_y_align (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_ACTOR_ALIGN_FILL);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->y_align;
+  return _clutter_actor_get_layout_info_or_defaults (self)->y_align;
 }
 
 ClutterMargin *
@@ -13463,12 +13655,12 @@ void
 clutter_actor_set_margin_top (ClutterActor *self,
                               gfloat        margin)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->margin.top == margin)
     return;
@@ -13485,19 +13677,19 @@ clutter_actor_get_margin_top (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->margin.top;
+  return _clutter_actor_get_layout_info_or_defaults (self)->margin.top;
 }
 
 void
 clutter_actor_set_margin_bottom (ClutterActor *self,
                                  gfloat        margin)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->margin.bottom == margin)
     return;
@@ -13514,19 +13706,19 @@ clutter_actor_get_margin_bottom (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->margin.bottom;
+  return _clutter_actor_get_layout_info_or_defaults (self)->margin.bottom;
 }
 
 void
 clutter_actor_set_margin_left (ClutterActor *self,
                                gfloat        margin)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->margin.left == margin)
     return;
@@ -13543,19 +13735,19 @@ clutter_actor_get_margin_left (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->margin.left;
+  return _clutter_actor_get_layout_info_or_defaults (self)->margin.left;
 }
 
 void
 clutter_actor_set_margin_right (ClutterActor *self,
                                 gfloat        margin)
 {
-  LayoutInfo *info;
+  ClutterLayoutInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = clutter_actor_get_layout_info (self);
+  info = _clutter_actor_get_layout_info (self);
 
   if (info->margin.right == margin)
     return;
@@ -13572,5 +13764,5 @@ clutter_actor_get_margin_right (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return clutter_actor_get_layout_info_or_defaults (self)->margin.right;
+  return _clutter_actor_get_layout_info_or_defaults (self)->margin.right;
 }
