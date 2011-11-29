@@ -10190,6 +10190,32 @@ container_lower (ClutterContainer *container,
   clutter_actor_queue_relayout (self);
 }
 
+static gint
+sort_by_depth (gconstpointer a,
+               gconstpointer b)
+{
+  const ClutterActor *actor_a = a;
+  const ClutterActor *actor_b = b;
+
+  if (actor_a->priv->z < actor_b->priv->z)
+    return -1;
+
+  if (actor_a->priv->z > actor_b->priv->z)
+    return 1;
+
+  return 0;
+}
+
+static void
+container_sort_by_depth (ClutterContainer *container)
+{
+  ClutterActorPrivate *priv = CLUTTER_ACTOR (container)->priv;
+
+  priv->children = g_list_sort (priv->children, sort_by_depth);
+
+  clutter_actor_queue_relayout (CLUTTER_ACTOR (container));
+}
+
 static void
 clutter_container_iface_init (ClutterContainerIface *iface)
 {
@@ -10199,6 +10225,7 @@ clutter_container_iface_init (ClutterContainerIface *iface)
 
   iface->raise = container_raise;
   iface->lower = container_lower;
+  iface->sort_depth_order = container_sort_by_depth;
 }
 
 typedef enum
