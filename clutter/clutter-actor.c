@@ -9412,6 +9412,9 @@ insert_child_at_index (ClutterActor *self,
       child->priv->next_sibling = tmp;
 
       self->priv->first_child = child;
+
+      if (self->priv->last_child == NULL)
+        self->priv->last_child = child;
     }
   else if (index < 0)
     {
@@ -9424,6 +9427,9 @@ insert_child_at_index (ClutterActor *self,
       child->priv->next_sibling = NULL;
 
       self->priv->last_child = child;
+
+      if (self->priv->first_child == NULL)
+        self->priv->first_child = child;
     }
   else
     {
@@ -9466,13 +9472,26 @@ insert_child_above (ClutterActor *self,
     sibling = self->priv->last_child;
 
   child->priv->prev_sibling = sibling;
-  child->priv->next_sibling = NULL;
 
   if (sibling != NULL)
-    sibling->priv->next_sibling = child;
+    {
+      ClutterActor *tmp = sibling->priv->next_sibling;
 
-  if (self->priv->last_child == sibling)
+      child->priv->next_sibling = tmp;
+
+      if (tmp != NULL)
+        tmp->priv->prev_sibling = child;
+
+      sibling->priv->next_sibling = child;
+    }
+  else
+    child->priv->next_sibling = NULL;
+
+  if (self->priv->last_child == NULL || self->priv->last_child == sibling)
     self->priv->last_child = child;
+
+  if (self->priv->first_child == NULL)
+    self->priv->first_child = sibling != NULL ? sibling : child;
 }
 
 static void
@@ -9485,14 +9504,27 @@ insert_child_below (ClutterActor *self,
   if (sibling == NULL)
     sibling = self->priv->first_child;
 
-  child->priv->prev_sibling = NULL;
   child->priv->next_sibling = sibling;
 
   if (sibling != NULL)
-    sibling->priv->prev_sibling = child;
+    {
+      ClutterActor *tmp = sibling->priv->prev_sibling;
 
-  if (self->priv->first_child == sibling)
+      child->priv->prev_sibling = tmp;
+
+      if (tmp != NULL)
+        tmp->priv->next_sibling = child;
+
+      sibling->priv->prev_sibling = child;
+    }
+  else
+    child->priv->prev_sibling = NULL;
+
+  if (self->priv->first_child == NULL || self->priv->first_child == sibling)
     self->priv->first_child = child;
+
+  if (self->priv->last_child == NULL)
+    self->priv->last_child = sibling != NULL ? sibling : child;
 }
 
 typedef void (* ClutterActorAddChildFunc) (ClutterActor *parent,
@@ -9663,7 +9695,6 @@ clutter_actor_insert_child_at_index (ClutterActor *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (child));
   g_return_if_fail (self != child);
   g_return_if_fail (child->priv->parent == NULL);
-  g_return_if_fail (index_ < self->priv->n_children);
 
   clutter_actor_add_child_internal (self, child,
                                     insert_child_at_index,
