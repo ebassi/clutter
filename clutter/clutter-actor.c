@@ -4386,6 +4386,7 @@ clutter_actor_real_get_paint_volume (ClutterActor       *self,
         }
 
       clutter_paint_volume_union (volume, child_volume);
+      res = TRUE;
     }
 
   return res;
