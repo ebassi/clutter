@@ -15479,7 +15479,8 @@ clutter_actor_get_background_color (ClutterActor *self,
  * of children of @self's parent.
  *
  * The returned pointer is only valid until the scene graph changes; it
- * is guaranteed to remain the same during the paint sequence.
+ * is not safe to modify the list of children of @self while iterating
+ * it.
  *
  * Return value: (transfer none): a pointer to a #ClutterActor, or %NULL
  *
@@ -15500,7 +15501,9 @@ clutter_actor_get_previous_sibling (ClutterActor *self)
  * Retrieves the sibling of @self that comes after it in the list
  * of children of @self's parent.
  *
- * The returned pointer is only valid until the scene graph changes.
+ * The returned pointer is only valid until the scene graph changes; it
+ * is not safe to modify the list of children of @self while iterating
+ * it.
  *
  * Return value: (transfer none): a pointer to a #ClutterActor, or %NULL
  *
@@ -15520,7 +15523,9 @@ clutter_actor_get_next_sibling (ClutterActor *self)
  *
  * Retrieves the first child of @self.
  *
- * The returned pointer is only valid until the scene graph changes.
+ * The returned pointer is only valid until the scene graph changes; it
+ * is not safe to modify the list of children of @self while iterating
+ * it.
  *
  * Return value: (transfer none): a pointer to a #ClutterActor, or %NULL
  *
@@ -15540,7 +15545,9 @@ clutter_actor_get_first_child (ClutterActor *self)
  *
  * Retrieves the last child of @self.
  *
- * The returned pointer is only valid until the scene graph changes.
+ * The returned pointer is only valid until the scene graph changes; it
+ * is not safe to modify the list of children of @self while iterating
+ * it.
  *
  * Return value: (transfer none): a pointer to a #ClutterActor, or %NULL
  *
