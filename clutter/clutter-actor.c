@@ -9470,16 +9470,19 @@ typedef void (* ClutterActorAddChildFunc) (ClutterActor *parent,
                                            ClutterActor *child,
                                            gpointer      data);
 
+typedef enum {
+  ADD_CHILD_CREATE_META      = 1 << 0,
+  ADD_CHILD_EMIT_PARENT_SET  = 1 << 1,
+  ADD_CHILD_EMIT_ACTOR_ADDED = 1 << 2
+} ClutterActorAddChildFlags;
+
 /*< private >
  * clutter_actor_add_child_internal:
  * @self: a #ClutterActor
  * @child: a #ClutterActor
+ * @flags: control flags for actions
  * @add_func: delegate function
  * @data: (closure): data to pass to @add_func
- * @create_meta: whether this function should create a #ClutterChildMeta
- *   instance through the #ClutterContainer interface
- * @emit_signal: whether this function should emit the
- *   #ClutterContainer::actor-added signal
  *
  * Adds @child to the list of children of @self.
  *
@@ -9487,19 +9490,17 @@ typedef void (* ClutterActorAddChildFunc) (ClutterActor *parent,
  * function will just set up the state, perform basic checks, and emit
  * signals.
  *
- * For backward compatibility with #ClutterContainer and the old
- * #ClutterActor API, this function can optionally emit the Container
- * signals and create #ClutterChildMeta instances.
+ * The @flags argument is used to perform additional operations.
  */
-static void
-clutter_actor_add_child_internal (ClutterActor             *self,
-                                  ClutterActor             *child,
-                                  ClutterActorAddChildFunc  add_func,
-                                  gpointer                  data,
-                                  gboolean                  create_meta,
-                                  gboolean                  emit_signal)
+static inline void
+clutter_actor_add_child_internal (ClutterActor              *self,
+                                  ClutterActor              *child,
+                                  ClutterActorAddChildFlags  flags,
+                                  ClutterActorAddChildFunc   add_func,
+                                  gpointer                   data)
 {
   ClutterTextDirection text_dir;
+  gboolean create_meta, emit_parent_set, emit_actor_added;
 
   if (child->priv->parent != NULL)
     {
@@ -9520,6 +9521,10 @@ clutter_actor_add_child_internal (ClutterActor             *self,
       return;
     }
 
+  create_meta = (flags & ADD_CHILD_CREATE_META) != 0;
+  emit_parent_set = (flags & ADD_CHILD_EMIT_PARENT_SET) != 0;
+  emit_actor_added = (flags & ADD_CHILD_EMIT_ACTOR_ADDED) != 0;
+
   if (create_meta)
     clutter_container_create_child_meta (CLUTTER_CONTAINER (self), child);
 
@@ -9538,7 +9543,7 @@ clutter_actor_add_child_internal (ClutterActor             *self,
     CLUTTER_SET_PRIVATE_FLAGS (child, CLUTTER_INTERNAL_CHILD);
 
   /* clutter_actor_reparent() will emit ::parent-set for us */
-  if (!CLUTTER_ACTOR_IN_REPARENT (child))
+  if (emit_parent_set && !CLUTTER_ACTOR_IN_REPARENT (child))
     g_signal_emit (child, actor_signals[PARENT_SET], 0, NULL);
 
   /* If parent is mapped or realized, we need to also be mapped or
@@ -9574,7 +9579,7 @@ clutter_actor_add_child_internal (ClutterActor             *self,
       clutter_actor_queue_relayout (child->priv->parent);
     }
 
-  if (emit_signal)
+  if (emit_actor_added)
     g_signal_emit_by_name (self, "actor-added", child);
 }
 
@@ -9606,10 +9611,11 @@ clutter_actor_add_child (ClutterActor *self,
   g_return_if_fail (child->priv->parent == NULL);
 
   clutter_actor_add_child_internal (self, child,
+                                    ADD_CHILD_CREATE_META |
+                                    ADD_CHILD_EMIT_PARENT_SET |
+                                    ADD_CHILD_EMIT_ACTOR_ADDED,
                                     insert_child_at_depth,
-                                    NULL,
-                                    TRUE, /* create_meta */
-                                    TRUE  /* emit_signals */);
+                                    NULL);
 }
 
 /**
@@ -9643,10 +9649,11 @@ clutter_actor_insert_child_at_index (ClutterActor *self,
   g_return_if_fail (child->priv->parent == NULL);
 
   clutter_actor_add_child_internal (self, child,
+                                    ADD_CHILD_CREATE_META |
+                                    ADD_CHILD_EMIT_PARENT_SET |
+                                    ADD_CHILD_EMIT_ACTOR_ADDED,
                                     insert_child_at_index,
-                                    GINT_TO_POINTER (index_),
-                                    TRUE,
-                                    TRUE);
+                                    GINT_TO_POINTER (index_));
 }
 
 /**
@@ -9685,10 +9692,11 @@ clutter_actor_insert_child_above (ClutterActor *self,
                      sibling->priv->parent == self));
 
   clutter_actor_add_child_internal (self, child,
+                                    ADD_CHILD_CREATE_META |
+                                    ADD_CHILD_EMIT_PARENT_SET |
+                                    ADD_CHILD_EMIT_ACTOR_ADDED,
                                     insert_child_above,
-                                    sibling,
-                                    TRUE,
-                                    TRUE);
+                                    sibling);
 }
 
 /**
@@ -9727,10 +9735,11 @@ clutter_actor_insert_child_below (ClutterActor *self,
                      sibling->priv->parent == self));
 
   clutter_actor_add_child_internal (self, child,
+                                    ADD_CHILD_CREATE_META |
+                                    ADD_CHILD_EMIT_PARENT_SET |
+                                    ADD_CHILD_EMIT_ACTOR_ADDED,
                                     insert_child_below,
-                                    sibling,
-                                    TRUE,
-                                    TRUE);
+                                    sibling);
 }
 
 /**
@@ -9765,10 +9774,9 @@ clutter_actor_set_parent (ClutterActor *self,
    * emissions
    */
   clutter_actor_add_child_internal (parent, self,
+                                    ADD_CHILD_EMIT_PARENT_SET,
                                     insert_child_at_depth,
-                                    NULL,
-                                    FALSE,
-                                    FALSE);
+                                    NULL);
 }
 
 /**
@@ -9847,13 +9855,31 @@ remove_child (ClutterActor *self,
     self->priv->last_child = prev_sibling;
 }
 
+typedef enum {
+  REMOVE_CHILD_DESTROY_META = 1 << 0,
+  REMOVE_CHILD_EMIT_PARENT_SET = 1 << 1,
+  REMOVE_CHILD_EMIT_ACTOR_REMOVED = 1 << 2
+} ClutterActorRemoveChildFlags;
+
+/*< private >
+ * clutter_actor_remove_child_internal:
+ * @self: a #ClutterActor
+ * @child: the child of @self that has to be removed
+ * @flags: control the removal operations
+ *
+ * Removes @child from the list of children of @self.
+ */
 static void
-clutter_actor_remove_child_internal (ClutterActor *self,
-                                     ClutterActor *child,
-                                     gboolean      destroy_meta,
-                                     gboolean      emit_signal)
+clutter_actor_remove_child_internal (ClutterActor                 *self,
+                                     ClutterActor                 *child,
+                                     ClutterActorRemoveChildFlags  flags)
 {
+  gboolean destroy_meta, emit_parent_set, emit_actor_removed;
   gboolean was_mapped;
+
+  destroy_meta = (flags & REMOVE_CHILD_DESTROY_META) != 0;
+  emit_parent_set = (flags & REMOVE_CHILD_EMIT_PARENT_SET) != 0;
+  emit_actor_removed = (flags & REMOVE_CHILD_EMIT_ACTOR_REMOVED) != 0;
 
   if (destroy_meta)
     clutter_container_destroy_child_meta (CLUTTER_CONTAINER (self), child);
@@ -9890,7 +9916,7 @@ clutter_actor_remove_child_internal (ClutterActor *self,
   child->priv->parent = NULL;
 
   /* clutter_actor_reparent() will emit ::parent-set for us */
-  if (!CLUTTER_ACTOR_IN_REPARENT (child))
+  if (emit_parent_set && !CLUTTER_ACTOR_IN_REPARENT (child))
     g_signal_emit (child, actor_signals[PARENT_SET], 0, self);
 
   remove_child (self, child);
@@ -9904,7 +9930,7 @@ clutter_actor_remove_child_internal (ClutterActor *self,
     clutter_actor_queue_relayout (self);
 
   /* we need to emit the signal before dropping the reference */
-  if (emit_signal)
+  if (emit_actor_removed)
     g_signal_emit_by_name (self, "actor-removed", child);
 
   /* remove the reference we acquired in clutter_actor_add_child() */
@@ -9938,7 +9964,10 @@ clutter_actor_remove_child (ClutterActor *self,
   g_return_if_fail (child->priv->parent != NULL);
   g_return_if_fail (child->priv->parent == self);
 
-  clutter_actor_remove_child_internal (self, child, TRUE, TRUE);
+  clutter_actor_remove_child_internal (self, child,
+                                       REMOVE_CHILD_DESTROY_META |
+                                       REMOVE_CHILD_EMIT_PARENT_SET |
+                                       REMOVE_CHILD_EMIT_ACTOR_REMOVED);
 }
 
 /**
@@ -9967,7 +9996,10 @@ clutter_actor_remove_all_children (ClutterActor *self)
     {
       ClutterActor *next = iter->priv->next_sibling;
 
-      clutter_actor_remove_child_internal (self, iter, TRUE, TRUE);
+      clutter_actor_remove_child_internal (self, iter,
+                                           REMOVE_CHILD_DESTROY_META |
+                                           REMOVE_CHILD_EMIT_PARENT_SET |
+                                           REMOVE_CHILD_EMIT_ACTOR_REMOVED);
 
       iter = next;
     }
@@ -10036,14 +10068,19 @@ clutter_actor_replace_child (ClutterActor *self,
   prev_sibling = old_child->priv->prev_sibling;
   next_sibling = old_child->priv->next_sibling;
 
-  clutter_actor_remove_child_internal (self, old_child, TRUE, TRUE);
+  clutter_actor_remove_child_internal (self, old_child,
+                                       REMOVE_CHILD_DESTROY_META |
+                                       REMOVE_CHILD_EMIT_PARENT_SET |
+                                       REMOVE_CHILD_EMIT_ACTOR_REMOVED);
 
   clos.prev_sibling = prev_sibling;
   clos.next_sibling = next_sibling;
   clutter_actor_add_child_internal (self, new_child,
+                                    ADD_CHILD_CREATE_META |
+                                    ADD_CHILD_EMIT_PARENT_SET |
+                                    ADD_CHILD_EMIT_ACTOR_ADDED,
                                     insert_child_between,
-                                    &clos,
-                                    TRUE, TRUE);
+                                    &clos);
 }
 
 /**
@@ -10073,8 +10110,7 @@ clutter_actor_unparent (ClutterActor *self)
     return;
 
   clutter_actor_remove_child_internal (self->priv->parent, self,
-                                       FALSE,
-                                       FALSE);
+                                       REMOVE_CHILD_EMIT_PARENT_SET);
 }
 
 /**
