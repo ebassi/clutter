@@ -51,6 +51,7 @@ pc_files =
 source_h =					\
 	$(srcdir)/clutter-action.h		\
 	$(srcdir)/clutter-actor-meta.h		\
+	$(srcdir)/clutter-actor-model.h		\
 	$(srcdir)/clutter-actor.h		\
 	$(srcdir)/clutter-align-constraint.h	\
 	$(srcdir)/clutter-alpha.h		\
@@ -124,6 +125,7 @@ source_c = \
 	$(srcdir)/clutter-action.c		\
 	$(srcdir)/clutter-actor-box.c		\
 	$(srcdir)/clutter-actor-meta.c		\
+	$(srcdir)/clutter-actor-model.c		\
 	$(srcdir)/clutter-actor.c		\
 	$(srcdir)/clutter-align-constraint.c	\
 	$(srcdir)/clutter-alpha.c 		\
@@ -196,6 +198,7 @@ source_c = \
 # private headers; these should not be distributed or introspected
 source_h_priv = \
 	$(srcdir)/clutter-actor-meta-private.h		\
+	$(srcdir)/clutter-actor-model-private.h		\
 	$(srcdir)/clutter-actor-private.h		\
 	$(srcdir)/clutter-backend-private.h		\
 	$(srcdir)/clutter-bezier.h			\

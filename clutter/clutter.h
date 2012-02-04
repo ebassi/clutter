@@ -34,6 +34,7 @@
 #include "clutter-action.h"
 #include "clutter-actor.h"
 #include "clutter-actor-meta.h"
+#include "clutter-actor-model.h"
 #include "clutter-align-constraint.h"
 #include "clutter-alpha.h"
 #include "clutter-animatable.h"

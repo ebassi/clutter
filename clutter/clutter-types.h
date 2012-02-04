@@ -78,6 +78,7 @@ typedef struct _ClutterLayoutMeta       ClutterLayoutMeta;
 typedef struct _ClutterActorMeta        ClutterActorMeta;
 typedef struct _ClutterLayoutManager    ClutterLayoutManager;
 typedef struct _ClutterActorIter        ClutterActorIter;
+typedef struct _ClutterActorModel       ClutterActorModel; /* dummy */
 
 typedef struct _ClutterAlpha            ClutterAlpha;
 typedef struct _ClutterAnimatable       ClutterAnimatable; /* dummy */
