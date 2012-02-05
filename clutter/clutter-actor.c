@@ -328,6 +328,7 @@
 
 #include "clutter-action.h"
 #include "clutter-actor-meta-private.h"
+#include "clutter-actor-model-private.h"
 #include "clutter-animatable.h"
 #include "clutter-color-static.h"
 #include "clutter-color.h"
@@ -454,6 +455,9 @@ struct _ClutterActorPrivate
 
   /* delegate object used to allocate the children of this actor */
   ClutterLayoutManager *layout_manager;
+
+  /* model, used to drive the actor */
+  ClutterActorModel *model;
 
   /* used when painting, to update the paint volume */
   ClutterEffect *current_effect;
@@ -616,6 +620,8 @@ enum
 
   PROP_FIRST_CHILD,
   PROP_LAST_CHILD,
+
+  PROP_MODEL,
 
   PROP_LAST
 };
@@ -4142,6 +4148,10 @@ clutter_actor_set_property (GObject      *object,
       clutter_actor_set_background_color (actor, g_value_get_boxed (value));
       break;
 
+    case PROP_MODEL:
+      clutter_actor_set_model (actor, g_value_get_object (value));
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -4538,6 +4548,10 @@ clutter_actor_get_property (GObject    *object,
 
     case PROP_LAST_CHILD:
       g_value_set_object (value, priv->last_child);
+      break;
+
+    case PROP_MODEL:
+      g_value_set_object (value, priv->model);
       break;
 
     default:
@@ -5774,6 +5788,23 @@ clutter_actor_class_init (ClutterActorClass *klass)
                          P_("The actor's last child"),
                          CLUTTER_TYPE_ACTOR,
                          CLUTTER_PARAM_READABLE);
+
+  /**
+   * ClutterActor:model:
+   *
+   * The #ClutterActorModel controlling the actor.
+   *
+   * The #ClutterActor will defer its preferred size, allocation, painting,
+   * and picking to the model's implementation.
+   *
+   * Since: 1.10
+   */
+  obj_props[PROP_MODEL] =
+    g_param_spec_object ("model",
+                         P_("Model"),
+                         P_("The model controlling the actor"),
+                         CLUTTER_TYPE_ACTOR_MODEL,
+                         CLUTTER_PARAM_READWRITE);
 
   g_object_class_install_properties (object_class, PROP_LAST, obj_props);
 
@@ -15722,4 +15753,72 @@ clutter_actor_iter_remove (ClutterActorIter *iter)
 
       ri->age += 1;
     }
+}
+
+/**
+ * clutter_actor_set_model:
+ * @self: a #ClutterActor
+ * @model: (allow-none): a #ClutterActorModel, or %NULL to unset the
+ *   currently set model
+ *
+ * Sets the model that will be used by a #ClutterActor to provide the
+ * implementation of its preferred size, allocation, painting, and
+ * picking.
+ *
+ * This function will acquire a reference on the @model, which will
+ * be released when the actor is destroyed or when this function is
+ * called with a %NULL argument.
+ *
+ * Since: 1.10
+ */
+void
+clutter_actor_set_model (ClutterActor      *self,
+                         ClutterActorModel *model)
+{
+  ClutterActorPrivate *priv;
+
+  g_return_if_fail (CLUTTER_IS_ACTOR (self));
+  g_return_if_fail (model == NULL || CLUTTER_IS_ACTOR_MODEL (model));
+
+  priv = self->priv;
+
+  if (priv->model == model)
+    return;
+
+  if (priv->model != NULL)
+    {
+      _clutter_actor_model_detached (priv->model, self);
+      g_clear_object (&priv->model);
+    }
+
+  if (model != NULL)
+    {
+      if (g_object_is_floating (G_OBJECT (model)))
+        priv->model = g_object_ref_sink (model);
+      else
+        priv->model = g_object_ref (model);
+
+      _clutter_actor_model_attached (priv->model, self);
+    }
+
+  g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_MODEL]);
+}
+
+/**
+ * clutter_actor_get_model:
+ * @self: a #ClutterActor
+ *
+ * Retrieves the #ClutterActorModel set for @self.
+ *
+ * Return value: (transfer none): a #ClutterActorModel, or %NULL if none
+ *   is set
+ *
+ * Since: 1.10
+ */
+ClutterActorModel *
+clutter_actor_get_model (ClutterActor *self)
+{
+  g_return_val_if_fail (CLUTTER_IS_ACTOR (self), NULL);
+
+  return self->priv->model;
 }
