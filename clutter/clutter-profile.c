@@ -1,10 +1,13 @@
 #ifdef CLUTTER_ENABLE_PROFILE
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 
-/* XXX - we need this for g_atexit() */
-#define G_DISABLE_DEPRECATION_WARNINGS
 #include "clutter-profile.h"
+#include "clutter-private.h"
 
 UProfContext *_clutter_uprof_context;
 
@@ -221,8 +224,15 @@ _clutter_uprof_report_done (UProfReport *report, void *closure, void *user_data)
   g_free (closure);
 }
 
+#ifdef CLUTTER_HAS_CONSTRUCTORS
+#ifdef CLUTTER_DEFINE_DESTRUCTOR_NEEDS_PRAGMA
+#pragma CLUTTER_DEFINE_DESTRUCTOR_PRAGMA_ARGS(print_profile_report_atexit)
+#endif
+CLUTTER_DEFINE_DESTRUCTOR(print_profile_report_atexit)
+#endif /* CLUTTER_HAS_CONSTRUCTORS */
+
 static void
-print_exit_report (void)
+print_profile_report_atexit (void)
 {
   if (!(clutter_profile_flags & CLUTTER_PROFILE_DISABLE_REPORT))
     uprof_report_print (clutter_uprof_report);
@@ -239,7 +249,11 @@ _clutter_uprof_init (void)
 
   _clutter_uprof_context = uprof_context_new ("Clutter");
   uprof_context_link (_clutter_uprof_context, uprof_get_mainloop_context ());
-  g_atexit (print_exit_report);
+
+#ifndef CLUTTER_HAS_CONSTRUCTORS
+  /* fall back to the old atexit() trick if we don't have destructors */
+  g_atexit (print_profile_report_atexit);
+#endif
 
   cogl_context = uprof_find_context ("Cogl");
   if (cogl_context)
