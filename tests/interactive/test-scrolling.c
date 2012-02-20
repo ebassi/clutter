@@ -65,6 +65,45 @@ on_drag_end (ClutterDragAction   *action,
                          NULL);
 }
 
+static gboolean
+on_scroll_event (ClutterActor *actor,
+                 ClutterEvent *event)
+{
+  if (clutter_event_has_precise_scroll_delta (event))
+    {
+      float delta_x;
+
+      clutter_event_get_scroll_delta (event, &delta_x, NULL);
+
+      if (clutter_actor_get_x (actor) + delta_x >= clutter_actor_get_width (actor))
+        return CLUTTER_EVENT_STOP;
+
+      clutter_actor_move_by (actor, delta_x, 0);
+    }
+  else
+    {
+      ClutterScrollDirection dir;
+
+      dir = clutter_event_get_scroll_direction (event);
+      switch (dir)
+        {
+        case CLUTTER_SCROLL_LEFT:
+          g_print ("Scroll left\n");
+          break;
+
+        case CLUTTER_SCROLL_RIGHT:
+          g_print ("Scroll right\n");
+          break;
+
+        case CLUTTER_SCROLL_UP:
+        case CLUTTER_SCROLL_DOWN:
+          break;
+        }
+    }
+
+  return CLUTTER_EVENT_STOP;
+}
+
 G_MODULE_EXPORT int
 test_scrolling_main (int argc, char *argv[])
 {
@@ -110,6 +149,10 @@ test_scrolling_main (int argc, char *argv[])
                                      CLUTTER_DRAG_X_AXIS);
   g_signal_connect (action, "drag-end", G_CALLBACK (on_drag_end), NULL);
   clutter_actor_set_reactive (viewport, TRUE);
+
+  g_signal_connect (viewport, "scroll-event",
+                    G_CALLBACK (on_scroll_event),
+                    NULL);
 
   /* children of the viewport */
   for (i = 0; i < N_RECTS; i++)

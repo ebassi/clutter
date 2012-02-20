@@ -420,6 +420,13 @@ ClutterActor *          clutter_event_get_related               (const ClutterEv
 void                    clutter_event_set_scroll_direction      (ClutterEvent           *event,
                                                                  ClutterScrollDirection  direction);
 ClutterScrollDirection  clutter_event_get_scroll_direction      (const ClutterEvent     *event);
+void                    clutter_event_set_scroll_delta          (ClutterEvent           *event,
+                                                                 gfloat                  delta_x,
+                                                                 gfloat                  delta_y);
+void                    clutter_event_get_scroll_delta          (const ClutterEvent     *event,
+                                                                 gfloat                 *delta_x,
+                                                                 gfloat                 *delta_y);
+gboolean                clutter_event_has_precise_scroll_delta  (const ClutterEvent     *event);
 
 guint32                 clutter_keysym_to_unicode               (guint                   keyval);
 guint                   clutter_unicode_to_keysym               (guint32                 wc);

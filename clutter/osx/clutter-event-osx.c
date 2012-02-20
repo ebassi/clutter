@@ -252,7 +252,7 @@ take_and_queue_event (ClutterEvent *event)
 
 static void
 process_scroll_event (ClutterEvent *event,
-                      gboolean isVertical)
+                      gboolean      isVertical)
 {
   ClutterStageWindow *impl;
   ClutterStageOSX *stage_osx;
@@ -290,14 +290,6 @@ process_scroll_event (ClutterEvent *event,
       clutter_event_set_device (event_gen, clutter_event_get_device (event));
 
       take_and_queue_event (event_gen);
-      
-      CLUTTER_NOTE (EVENT, "scroll %s at %f,%f",
-                    (event_gen->scroll.direction == CLUTTER_SCROLL_UP) ? "UP" :
-                    ( 
-                    (event_gen->scroll.direction == CLUTTER_SCROLL_DOWN) ? "DOWN" :
-                    (
-                    (event_gen->scroll.direction == CLUTTER_SCROLL_RIGHT) ? "RIGHT" : "LEFT")),
-                    event->scroll.x, event->scroll.y);
     } 
 }
 
@@ -387,15 +379,51 @@ clutter_event_osx_translate (NSEvent *nsevent,
       return TRUE;
 
     case NSScrollWheel:
-      stage_osx->scroll_pos_x += [nsevent deltaX];
-      stage_osx->scroll_pos_y += [nsevent deltaY];
-      
-      [nsevent clutterX:&(event->scroll.x) y:&(event->scroll.y)];
-      event->scroll.modifier_state = [nsevent clutterModifierState];
-      clutter_event_set_device (event, manager_osx->core_pointer);
-      
-      process_scroll_event (event, TRUE);
-      process_scroll_event (event, FALSE);
+      {
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+        BOOL isPrecise = NO;
+
+        [nsevent clutterX:&(event->scroll.x) y:&(event->scroll.y)];
+        event->scroll.modifier_state = [nsevent clutterModifierState];
+        clutter_event_set_device (event, manager_osx->core_pointer);
+
+        isPrecise = [nsevent hasPreciseScrollingDeltas];
+        if (isPrecise)
+          {
+            ClutterScrollDirection direction;
+            CGFloat deltaX, deltaY;
+
+            deltaX = [nsevent scrollingDeltaX];
+            deltaY = [nsevent scrollingDeltaY];
+
+            if (deltaX >= deltaY)
+              {
+                if (deltaX < 0)
+                  direction = CLUTTER_SCROLL_LEFT;
+                else
+                  direction = CLUTTER_SCROLL_RIGHT;
+              }
+            else
+              {
+                if (deltaY < 0)
+                  direction = CLUTTER_SCROLL_UP;
+                else
+                  direction = CLUTTER_SCROLL_DOWN;
+              }
+
+            clutter_event_set_scroll_direction (event, direction);
+            clutter_event_set_scroll_delta (event, (float) deltaX, (float) deltaY);
+
+            return TRUE;
+          }
+#endif
+
+        stage_osx->scroll_pos_x += [nsevent deltaX];
+        stage_osx->scroll_pos_y += [nsevent deltaY];
+
+        process_scroll_event (event, TRUE);
+        process_scroll_event (event, FALSE);
+      }
       break;
       
     case NSFlagsChanged:

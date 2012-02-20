@@ -46,10 +46,15 @@
 typedef struct _ClutterEventPrivate {
   ClutterEvent base;
 
+  gpointer platform_data;
+
   ClutterInputDevice *device;
   ClutterInputDevice *source_device;
 
-  gpointer platform_data;
+  float scroll_delta_x;
+  float scroll_delta_y;
+
+  guint has_precise_scroll_delta : 1;
 } ClutterEventPrivate;
 
 static GHashTable *all_events = NULL;
@@ -530,6 +535,111 @@ clutter_event_get_scroll_direction (const ClutterEvent *event)
   g_return_val_if_fail (event->type == CLUTTER_SCROLL, CLUTTER_SCROLL_UP);
 
   return event->scroll.direction;
+}
+
+/**
+ * clutter_event_get_scroll_delta:
+ * @event: a #ClutterEvent of type %CLUTTER_SCROLL
+ * @delta_x: (out): the return location for the horizontal delta
+ * @delta_y: (out): the return location for the vertical delta
+ *
+ * Retrieves the scroll delta on both the horizontal and vertical axis.
+ *
+ * When clutter_event_has_precise_scroll_delta() returns %FALSE, the
+ * scrolling is discrete, and it's deferred to the caller to compute
+ * the size of the scrolling; otherwise, if it returns %TRUE, the user
+ * should scroll using the given amount.
+ *
+ * Since: 1.10
+ */
+void
+clutter_event_get_scroll_delta (const ClutterEvent *event,
+                                gfloat             *delta_x,
+                                gfloat             *delta_y)
+{
+  ClutterEventPrivate *real_event;
+
+  g_return_if_fail (event != NULL);
+  g_return_if_fail (event->type == CLUTTER_SCROLL);
+
+  if (!is_event_allocated (event))
+    {
+      if (delta_x != NULL)
+        *delta_x = 0.f;
+
+      if (delta_y != NULL)
+        *delta_y = 0.f;
+
+      return;
+    }
+
+  real_event = (ClutterEventPrivate *) event;
+
+  if (delta_x != NULL)
+    *delta_x = real_event->scroll_delta_x;
+
+  if (delta_y != NULL)
+    *delta_y = real_event->scroll_delta_y;
+}
+
+/**
+ * clutter_event_set_scroll_delta:
+ * @event: an allocated #ClutterEvent
+ * @delta_x: the horizontal scroll wheel delta
+ * @delta_y: the vertical scroll wheel delta
+ *
+ * Sets the precise scrolling delta information on @event.
+ *
+ * Since: 1.10
+ */
+void
+clutter_event_set_scroll_delta (ClutterEvent *event,
+                                gfloat        delta_x,
+                                gfloat        delta_y)
+{
+  ClutterEventPrivate *real_event;
+
+  g_return_if_fail (event != NULL);
+
+  if (!is_event_allocated (event))
+    return;
+
+  real_event = (ClutterEventPrivate *) event;
+  real_event->has_precise_scroll_delta = TRUE;
+  real_event->scroll_delta_x = delta_x;
+  real_event->scroll_delta_y = delta_y;
+}
+
+/**
+ * clutter_event_has_precise_scroll_delta:
+ * @event: a #ClutterEvent
+ *
+ * Retrieves whether @event contains precise scrolling delta information,
+ * or if the amount of scrolling is discrete.
+ *
+ * This function should be called to decide whether or not the
+ * clutter_event_get_scroll_delta() should be used when scrolling
+ * contents.
+ *
+ * Return value: %TRUE if the event contains precise scrolling delta, and
+ *   %FALSE otherwise.
+ *
+ * Since: 1.10
+ */
+gboolean
+clutter_event_has_precise_scroll_delta (const ClutterEvent *event)
+{
+  ClutterEventPrivate *real_event;
+
+  g_return_val_if_fail (event != NULL, FALSE);
+  g_return_val_if_fail (event->type == CLUTTER_SCROLL, FALSE);
+
+  if (!is_event_allocated (event))
+    return FALSE;
+
+  real_event = (ClutterEventPrivate *) event;
+
+  return real_event->has_precise_scroll_delta;
 }
 
 /**
