@@ -714,22 +714,6 @@ clutter_stage_paint (ClutterActor *self)
     clutter_actor_paint (child);
 }
 
-static void
-clutter_stage_pick (ClutterActor       *self,
-		    const ClutterColor *color)
-{
-  ClutterActorIter iter;
-  ClutterActor *child;
-
-  /* Note: we don't chain up to our parent as we don't want any geometry
-   * emitted for the stage itself. The stage's pick id is effectively handled
-   * by the call to cogl_clear done in clutter-main.c:_clutter_do_pick_async()
-   */
-  clutter_actor_iter_init (&iter, self);
-  while (clutter_actor_iter_next (&iter, &child))
-    clutter_actor_paint (child);
-}
-
 static gboolean
 clutter_stage_get_paint_volume (ClutterActor *self,
                                 ClutterPaintVolume *volume)
@@ -1864,7 +1848,6 @@ clutter_stage_class_init (ClutterStageClass *klass)
   actor_class->get_preferred_width = clutter_stage_get_preferred_width;
   actor_class->get_preferred_height = clutter_stage_get_preferred_height;
   actor_class->paint = clutter_stage_paint;
-  actor_class->pick = clutter_stage_pick;
   actor_class->get_paint_volume = clutter_stage_get_paint_volume;
   actor_class->realize = clutter_stage_realize;
   actor_class->unrealize = clutter_stage_unrealize;
