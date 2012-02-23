@@ -2471,6 +2471,12 @@ _clutter_stage_get_projection_matrix (ClutterStage *stage,
   *projection = stage->priv->projection;
 }
 
+const CoglMatrix *
+_clutter_stage_peek_projection_matrix (ClutterStage *stage)
+{
+  return &stage->priv->projection;
+}
+
 /* This simply provides a simple mechanism for us to ensure that
  * the projection matrix gets re-asserted before painting.
  *

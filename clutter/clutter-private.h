@@ -253,6 +253,12 @@ void _clutter_util_rectangle_union (const cairo_rectangle_int_t *src1,
                                     const cairo_rectangle_int_t *src2,
                                     cairo_rectangle_int_t       *dest);
 
+gboolean _clutter_util_unproject (const ClutterVertex *in_vertex,
+                                  const CoglMatrix *modelview,
+                                  const CoglMatrix *projection,
+                                  const float *viewport,
+                                  ClutterVertex *out_vertex);
+
 typedef struct _ClutterPlane
 {
   float v0[3];

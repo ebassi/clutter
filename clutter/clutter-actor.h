@@ -262,10 +262,12 @@ struct _ClutterActorClass
 
   void     (* paint_node)           (ClutterActor         *self,
                                      ClutterPaintNode     *root);
+  gboolean (* contains_point)       (ClutterActor         *self,
+                                     const ClutterPoint   *point);
 
   /*< private >*/
   /* padding for future expansion */
-  gpointer _padding_dummy[27];
+  gpointer _padding_dummy[26];
 };
 
 /**
@@ -527,6 +529,10 @@ gboolean                        clutter_actor_event                             
                                                                                  ClutterEvent               *event,
                                                                                  gboolean                    capture);
 gboolean                        clutter_actor_has_pointer                       (ClutterActor               *self);
+gboolean                        clutter_actor_contains_point                    (ClutterActor               *self,
+                                                                                 const ClutterPoint         *point);
+ClutterActor *                  clutter_actor_hit_test                          (ClutterActor               *self,
+                                                                                 const ClutterPoint         *point);
 
 /* Text */
 PangoContext *                  clutter_actor_get_pango_context                 (ClutterActor               *self);

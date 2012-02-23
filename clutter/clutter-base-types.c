@@ -895,8 +895,8 @@ clutter_rect_get_center (ClutterRect  *rect,
  * Since: 1.12
  */
 gboolean
-clutter_rect_contains_point (ClutterRect  *rect,
-                             ClutterPoint *point)
+clutter_rect_contains_point (ClutterRect        *rect,
+                             const ClutterPoint *point)
 {
   g_return_val_if_fail (rect != NULL, FALSE);
   g_return_val_if_fail (point != NULL, FALSE);

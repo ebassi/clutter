@@ -182,6 +182,71 @@ _clutter_util_rectangle_union (const cairo_rectangle_int_t *src1,
   dest->y = dest_y;
 }
 
+/*< private >
+ * _clutter_util_unproject:
+ * @in_vertex: a #ClutterVertex with the point to unproject
+ * @modelview: the modelview matrix used to unproject
+ * @projection: the projection matrix used to unproject
+ * @viewport: the viewport, as an array of floats with the origin in the
+ *   first two elements and the width and height in the last two
+ * @out_vertex: (out caller-allocates): return location for the unprojected
+ *   vertex
+ *
+ * Unprojects @in_vertex according to the provided modelview and projection
+ * matrices, and relative to the viewport.
+ *
+ * Return value: %TRUE if the vertex was successfully unprojected
+ */
+gboolean
+_clutter_util_unproject (const ClutterVertex *in_vertex,
+                         const CoglMatrix    *modelview,
+                         const CoglMatrix    *projection,
+                         const float         *viewport,
+                         ClutterVertex       *out_vertex)
+{
+  float in_v[4], out_v[4];
+  const float *matrix;
+  CoglMatrix final;
+  int i;
+
+  cogl_matrix_multiply (&final, modelview, projection);
+  if (!cogl_matrix_get_inverse (&final, &final))
+    return FALSE;
+
+  in_v[0] = in_vertex->x;
+  in_v[1] = in_vertex->y;
+  in_v[2] = in_vertex->z;
+  in_v[3] = 1.0f;
+
+  /* normalize in GL <-1, 1> space */
+  in_v[0] = (in_v[0] - viewport[0]) / viewport[2];
+  in_v[1] = (in_v[1] - viewport[1]) / viewport[3];
+
+  in_v[0] = in_v[0] * 2 - 1;
+  in_v[1] = in_v[1] * 2 - 1;
+  in_v[2] = in_v[2] * 2 - 1;
+
+  /* multiply the matrix with the vector */
+  matrix = cogl_matrix_get_array (&final);
+  for (i = 0; i < 4; i++)
+    {
+      out_v[i] = in_v[0] * matrix[0 * 4 + i]
+               + in_v[1] * matrix[1 * 4 + i]
+               + in_v[2] * matrix[2 * 4 + i]
+               + in_v[3] * matrix[3 * 4 + i];
+    }
+
+  if (out_v[3] == 0.f)
+    return FALSE;
+
+  /* denormalize using the viewport */
+  out_vertex->x = MTX_GL_SCALE_X (out_v[0], out_v[3], viewport[2], viewport[0]);
+  out_vertex->y = MTX_GL_SCALE_Y (out_v[1], out_v[3], viewport[3], viewport[1]);
+  out_vertex->z = MTX_GL_SCALE_Z (out_v[2], out_v[3], viewport[2], viewport[0]);
+
+  return TRUE;
+}
+
 typedef struct
 {
   GType value_type;

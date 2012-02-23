@@ -44,6 +44,7 @@ void                _clutter_stage_set_window            (ClutterStage          
 ClutterStageWindow *_clutter_stage_get_window            (ClutterStage          *stage);
 void                _clutter_stage_get_projection_matrix (ClutterStage          *stage,
                                                           CoglMatrix            *projection);
+const CoglMatrix *  _clutter_stage_peek_projection_matrix (ClutterStage         *stage);
 void                _clutter_stage_dirty_projection      (ClutterStage          *stage);
 void                _clutter_stage_set_viewport          (ClutterStage          *stage,
                                                           float                  x,

@@ -83,6 +83,28 @@ animate_rotation (ClutterActor *actor,
   return CLUTTER_EVENT_STOP;
 }
 
+static gboolean
+on_capture (ClutterActor *stage,
+            ClutterEvent *event)
+{
+  ClutterActor *hit;
+  ClutterPoint point = { 0, };
+
+  if (clutter_event_type (event) != CLUTTER_MOTION)
+    return CLUTTER_EVENT_PROPAGATE;
+
+  clutter_event_get_position (event, &point);
+
+  hit = clutter_actor_hit_test (stage, &point);
+  if (hit != NULL)
+    g_print ("HIT TEST: %s (at x:%.2f, y:%.2f)\n",
+             clutter_actor_get_name (hit),
+             point.x,
+             point.y);
+
+  return CLUTTER_EVENT_PROPAGATE;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -93,9 +115,11 @@ main (int argc, char *argv[])
     return EXIT_FAILURE;
 
   stage = clutter_stage_new ();
+  g_signal_connect (stage, "captured-event", G_CALLBACK (on_capture), NULL);
   g_signal_connect (stage, "destroy", G_CALLBACK (clutter_main_quit), NULL);
   clutter_stage_set_title (CLUTTER_STAGE (stage), "Three Flowers in a Vase");
   clutter_stage_set_user_resizable (CLUTTER_STAGE (stage), TRUE);
+  clutter_actor_set_name (stage, "Stage");
 
   /* there are three flowers in a vase */
   vase = clutter_actor_new ();

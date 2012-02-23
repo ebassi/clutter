@@ -192,6 +192,7 @@ static const GDebugKey clutter_debug_keys[] = {
   { "layout", CLUTTER_DEBUG_LAYOUT },
   { "clipping", CLUTTER_DEBUG_CLIPPING },
   { "oob-transforms", CLUTTER_DEBUG_OOB_TRANSFORMS },
+  { "hit-test", CLUTTER_DEBUG_HIT_TEST },
 };
 #endif /* CLUTTER_ENABLE_DEBUG */
 

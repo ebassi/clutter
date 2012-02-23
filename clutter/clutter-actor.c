@@ -5466,6 +5466,30 @@ clutter_actor_real_destroy (ClutterActor *actor)
   g_object_thaw_notify (G_OBJECT (actor));
 }
 
+static gboolean
+clutter_actor_real_contains_point (ClutterActor       *self,
+                                   const ClutterPoint *point)
+{
+  ClutterActorPrivate *priv = self->priv;
+  ClutterRect bounds;
+
+  CLUTTER_NOTE (HIT_TEST, "Point { x:%.2f, y:%.2f } -> '%s' { %.2f, %.2f, %.2f, %.2f }",
+                _clutter_actor_get_debug_name (self),
+                point->x, point->y,
+                priv->allocation.x1,
+                priv->allocation.y1,
+                priv->allocation.x2,
+                priv->allocation.y2);
+
+  clutter_rect_init (&bounds,
+                     0.f,
+                     0.f,
+                     priv->allocation.x2 - priv->allocation.x1,
+                     priv->allocation.y2 - priv->allocation.y1);
+
+  return clutter_rect_contains_point (&bounds, point);
+}
+
 static GObject *
 clutter_actor_constructor (GType gtype,
                            guint n_props,
@@ -5527,6 +5551,7 @@ clutter_actor_class_init (ClutterActorClass *klass)
   klass->has_overlaps = clutter_actor_real_has_overlaps;
   klass->paint = clutter_actor_real_paint;
   klass->destroy = clutter_actor_real_destroy;
+  klass->contains_point = clutter_actor_real_contains_point;
 
   g_type_class_add_private (klass, sizeof (ClutterActorPrivate));
 
@@ -18535,4 +18560,146 @@ clutter_actor_needs_expand (ClutterActor       *self,
     }
 
   return FALSE;
+}
+
+/**
+ * clutter_actor_contains_point:
+ * @self: a #ClutterActor
+ * @point: a #ClutterPoint, in actor-relative coordinates
+ *
+ * Calls #ClutterActorClass.contains_point() to check if @self contains
+ * the given @point.
+ *
+ * Return value: %TRUE if the #ClutterActor contains the point
+ *
+ * Since: 1.12
+ */
+gboolean
+clutter_actor_contains_point (ClutterActor       *self,
+                              const ClutterPoint *point)
+{
+  g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
+  g_return_val_if_fail (point != NULL, FALSE);
+
+  return CLUTTER_ACTOR_GET_CLASS (self)->contains_point (self, point);
+}
+
+static gboolean
+actor_is_transformed (ClutterActor *actor)
+{
+  const ClutterTransformInfo *info;
+
+  info = _clutter_actor_get_transform_info_or_defaults (actor);
+
+  if (info->depth != 0.f)
+    return TRUE;
+
+  if (info->rx_angle || info->ry_angle || info->rz_angle)
+    return TRUE;
+
+  if (info->scale_x != 1.f || info->scale_y != 1.f)
+    return TRUE;
+
+  if (!clutter_anchor_coord_is_zero (&info->anchor))
+    return TRUE;
+
+  return FALSE;
+}
+
+/**
+ * clutter_actor_hit_test:
+ * @self: a #ClutterActor
+ * @point: a #ClutterPoint, in actor-relative coordinates
+ *
+ * Finds the innermost #ClutterActor that contains the given @point.
+ *
+ * This function will recurse through the actor tree starting from @self
+ * and will implicitly call #ClutterActorClass.contains_point() to check
+ * if an actor contains the given point.
+ *
+ * Return value: (transfer none): a #ClutterActor, or %NULL
+ *
+ * Since: 1.12
+ */
+ClutterActor *
+clutter_actor_hit_test (ClutterActor       *self,
+                        const ClutterPoint *point)
+{
+  ClutterActor *retval, *child;
+  ClutterActorIter iter;
+  const CoglMatrix *projection;
+  float viewport[4];
+  ClutterStage *stage;
+
+  g_return_val_if_fail (CLUTTER_IS_ACTOR (self), NULL);
+  g_return_val_if_fail (point != NULL, NULL);
+
+  if (!clutter_actor_contains_point (self, point))
+    {
+      CLUTTER_NOTE (HIT_TEST,
+                    "The actor '%s' does not contain { x:%.2f, y:%.2f }",
+                    _clutter_actor_get_debug_name (self),
+                    point->x, point->y);
+      return NULL;
+    }
+
+  stage = (ClutterStage *) _clutter_actor_get_stage_internal (self);
+  if (stage == NULL)
+    return NULL;
+
+  /* XXX - need peek() versions of this */
+  projection = _clutter_stage_peek_projection_matrix (stage);
+
+  /* the viewport is defined to be the allocation of the actor */
+  viewport[0] = 0.f;
+  viewport[1] = 0.f;
+  viewport[2] = self->priv->allocation.x2 - self->priv->allocation.x1;
+  viewport[3] = self->priv->allocation.y2 - self->priv->allocation.y1;
+
+  clutter_actor_iter_init (&iter, self);
+  while (clutter_actor_iter_next (&iter, &child))
+    {
+      ClutterPoint child_point;
+
+      if (!actor_is_transformed (child))
+        {
+          /* fast path: just offset the coordinates */
+          child_point.x = point->x - child->priv->allocation.x1;
+          child_point.y = point->y - child->priv->allocation.y1;
+        }
+      else
+        {
+          ClutterVertex out_vertex = CLUTTER_VERTEX_INIT (0.f, 0.f, 0.f);
+          ClutterVertex in_vertex = CLUTTER_VERTEX_INIT (point->x, point->y, 0.f);
+
+          /* not so fast path: unproject the point */
+          if (!_clutter_util_unproject (&in_vertex,
+                                        &child->priv->transform,
+                                        projection,
+                                        viewport,
+                                        &out_vertex))
+            {
+              CLUTTER_NOTE (HIT_TEST, "Skipping '%s': unproject failed",
+                            _clutter_actor_get_debug_name (child));
+              continue;
+            }
+
+          child_point.x = out_vertex.x - child->priv->allocation.x1;
+          child_point.y = out_vertex.y - child->priv->allocation.y1;
+        }
+
+      retval = clutter_actor_hit_test (child, &child_point);
+      if (retval != NULL)
+        {
+          CLUTTER_NOTE (HIT_TEST,
+                        "Hit test success: '%s'",
+                        _clutter_actor_get_debug_name (retval));
+          return retval;
+        }
+    }
+
+  CLUTTER_NOTE (HIT_TEST,
+                "Hit test success: '%s'",
+                _clutter_actor_get_debug_name (self));
+  return self;
 }
