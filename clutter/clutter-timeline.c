@@ -1577,7 +1577,22 @@ clutter_timeline_get_delta (ClutterTimeline *timeline)
   return timeline->priv->msecs_delta;
 }
 
-/*
+void
+_clutter_timeline_advance (ClutterTimeline *timeline,
+                           gint64           tick_time)
+{
+  g_object_ref (timeline);
+
+  timeline->priv->is_playing = TRUE;
+
+  _clutter_timeline_do_tick (timeline, tick_time);
+
+  timeline->priv->is_playing = FALSE;
+
+  g_object_unref (timeline);
+}
+
+/*< private >
  * clutter_timeline_do_tick
  * @timeline: a #ClutterTimeline
  * @tick_time: time of advance
@@ -1592,8 +1607,6 @@ _clutter_timeline_do_tick (ClutterTimeline *timeline,
                            gint64           tick_time)
 {
   ClutterTimelinePrivate *priv;
-
-  g_return_if_fail (CLUTTER_IS_TIMELINE (timeline));
 
   priv = timeline->priv;
 
