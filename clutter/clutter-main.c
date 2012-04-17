@@ -3874,3 +3874,35 @@ _clutter_diagnostic_message (const char *format, ...)
 
   g_free (fmt);
 }
+
+/**
+ * clutter_enable_future:
+ * @feature: a future feature to enable
+ *
+ * Enables @feature from the list of available future features of
+ * Clutter.
+ *
+ * Future features are optional features that can modify the behaviour
+ * of Clutter; each future feature has an optional version, which identifies
+ * the version of Clutter that introduced it, and a mandatory version, which
+ * identifies the version of Clutter in which the feature became part of the
+ * default behaviour.
+ *
+ * This function can only be called prior to the initialization of Clutter.
+ *
+ * Since: 1.12
+ */
+void
+clutter_enable_future (ClutterFutureFeature feature)
+{
+  g_return_if_fail (feature < CLUTTER_FUTURE_N_FEATURES);
+
+  if (_clutter_context_is_initialized ())
+    {
+      g_warning ("Calling clutter_enable_future() is only allowed before "
+                 "Clutter has been initialized.");
+      return;
+    }
+
+  clutter_future_enable (feature);
+}

@@ -13,6 +13,8 @@ static const ClutterFuture __clutter_futures[] = {
   CLUTTER_DEFINE_FUTURE ("Last/Sentinel", CLUTTER_VERSION_1_0, CLUTTER_VERSION_1_0),
 };
 
+static gboolean __clutter_enabled_futures[1] = { FALSE, };
+
 const char *
 clutter_future_get_name (ClutterFutureFeature feature)
 {
@@ -48,5 +50,11 @@ clutter_future_is_enabled (ClutterFutureFeature feature)
   if (__clutter_futures[feature].mandatory_version <= CLUTTER_VERSION_HEX)
     return TRUE;
 
-  return FALSE;
+  return __clutter_enabled_futures[feature];
+}
+
+void
+clutter_future_enable (ClutterFutureFeature feature)
+{
+  __clutter_enabled_futures[feature] = TRUE;
 }

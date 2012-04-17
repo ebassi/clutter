@@ -36,6 +36,7 @@
 #include "clutter-effect.h"
 #include "clutter-event.h"
 #include "clutter-feature.h"
+#include "clutter-future-private.h"
 #include "clutter-id-pool.h"
 #include "clutter-layout-manager.h"
 #include "clutter-master-clock.h"

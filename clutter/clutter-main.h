@@ -90,6 +90,9 @@ ClutterInitError        clutter_init_with_args                  (int          *a
 GOptionGroup *          clutter_get_option_group                (void);
 GOptionGroup *          clutter_get_option_group_without_init   (void);
 
+/* Future support */
+void                    clutter_enable_future                   (ClutterFutureFeature feature);
+
 /* Mainloop */
 void                    clutter_main                            (void);
 void                    clutter_main_quit                       (void);

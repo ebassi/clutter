@@ -622,6 +622,7 @@ clutter_drop_action_get_type
 clutter_drop_action_new
 clutter_effect_get_type
 clutter_effect_paint_flags_get_type
+clutter_enable_future
 clutter_effect_queue_repaint
 clutter_events_pending
 clutter_event_copy
@@ -698,6 +699,7 @@ clutter_fog_get_type
 clutter_font_flags_get_type
 clutter_frame_source_add
 clutter_frame_source_add_full
+clutter_future_feature_get_type
 #ifdef CLUTTER_WINDOWING_GDK
 clutter_gdk_disable_event_retrieval
 clutter_gdk_get_default_display
