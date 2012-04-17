@@ -163,6 +163,7 @@ source_c = \
 	$(srcdir)/clutter-fixed-layout.c	\
 	$(srcdir)/clutter-flatten-effect.c	\
 	$(srcdir)/clutter-flow-layout.c		\
+	$(srcdir)/clutter-future.c		\
 	$(srcdir)/clutter-gesture-action.c 	\
 	$(srcdir)/clutter-image.c		\
 	$(srcdir)/clutter-input-device.c	\
@@ -220,6 +221,7 @@ source_h_priv = \
 	$(srcdir)/clutter-event-translator.h		\
 	$(srcdir)/clutter-event-private.h		\
 	$(srcdir)/clutter-flatten-effect.h		\
+	$(srcdir)/clutter-future-private.h		\
 	$(srcdir)/clutter-id-pool.h 			\
 	$(srcdir)/clutter-master-clock.h		\
 	$(srcdir)/clutter-model-private.h		\

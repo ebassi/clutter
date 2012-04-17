@@ -1237,6 +1237,23 @@ typedef enum { /*< prefix=CLUTTER_SCROLL >*/
   CLUTTER_SCROLL_BOTH         = CLUTTER_SCROLL_HORIZONTALLY | CLUTTER_SCROLL_VERTICALLY
 } ClutterScrollMode;
 
+/**
+ * ClutterFutureFeature:
+ * @CLUTTER_FUTURE_N_FEATURES: The number of available future features
+ *
+ * A set of future features that can be enabled when using Clutter.
+ *
+ * Each future feature has a defined optional version, which defines the
+ * version of Clutter that introduced the feature, and a mandatory version,
+ * which defines the version of Clutter that makes the feature part of
+ * the standard behaviour.
+ *
+ * Since: 1.12
+ */
+typedef enum { /*< prefix=CLUTTER_FEATURE >*/
+  CLUTTER_FUTURE_N_FEATURES
+} ClutterFutureFeature;
+
 G_END_DECLS
 
 #endif /* __CLUTTER_ENUMS_H__ */
