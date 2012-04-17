@@ -1239,6 +1239,8 @@ typedef enum { /*< prefix=CLUTTER_SCROLL >*/
 
 /**
  * ClutterFutureFeature:
+ * @CLUTTER_FUTURE_DEFAULT_EASING_STATE: Enables a default easing state
+ *   on #ClutterActor. Optional since 1.12, mandatory since 2.0
  * @CLUTTER_FUTURE_N_FEATURES: The number of available future features
  *
  * A set of future features that can be enabled when using Clutter.
@@ -1251,6 +1253,8 @@ typedef enum { /*< prefix=CLUTTER_SCROLL >*/
  * Since: 1.12
  */
 typedef enum { /*< prefix=CLUTTER_FEATURE >*/
+  CLUTTER_FUTURE_DEFAULT_EASING_STATE,
+
   CLUTTER_FUTURE_N_FEATURES
 } ClutterFutureFeature;
 

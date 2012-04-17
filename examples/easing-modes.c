@@ -77,7 +77,11 @@ on_button_press (ClutterActor       *actor,
     }
   else if (event->button == CLUTTER_BUTTON_MIDDLE)
     {
+      /* middle click jumps to position */
+      clutter_actor_save_easing_state (rectangle);
+      clutter_actor_set_easing_duration (rectangle, 0);
       clutter_actor_set_position (rectangle, event->x, event->y);
+      clutter_actor_restore_easing_state (rectangle);
     }
   else if (event->button == CLUTTER_BUTTON_PRIMARY)
     {
@@ -85,15 +89,8 @@ on_button_press (ClutterActor       *actor,
 
       cur_mode = easing_modes[current_mode].mode;
 
-      clutter_actor_save_easing_state (rectangle);
-
-      /* tween the actor using the current easing mode */
       clutter_actor_set_easing_mode (rectangle, cur_mode);
-      clutter_actor_set_easing_duration (rectangle, duration * 1000);
-
       clutter_actor_set_position (rectangle, event->x, event->y);
-
-      clutter_actor_restore_easing_state (rectangle);
     }
 
   return CLUTTER_EVENT_STOP;
@@ -187,6 +184,8 @@ main (int argc, char *argv[])
   gfloat stage_width, stage_height;
   GError *error = NULL;
 
+  clutter_enable_future (CLUTTER_FUTURE_DEFAULT_EASING_STATE);
+
   if (clutter_init_with_args (&argc, &argv,
                               NULL,
                               test_easing_entries,
@@ -204,8 +203,8 @@ main (int argc, char *argv[])
 
   /* create the actor that we want to tween */
   rect = make_bouncer (50, 50);
-  clutter_actor_add_child (stage, rect);
   clutter_actor_set_position (rect, stage_width / 2, stage_height / 2);
+  clutter_actor_add_child (stage, rect);
 
   text = g_strdup_printf (HELP_TEXT,
                           easing_modes[current_mode].name,
@@ -218,6 +217,7 @@ main (int argc, char *argv[])
   clutter_text_set_line_alignment (CLUTTER_TEXT (label), PANGO_ALIGN_RIGHT);
   clutter_actor_add_constraint (label, clutter_align_constraint_new (stage, CLUTTER_ALIGN_X_AXIS, 0.95));
   clutter_actor_add_constraint (label, clutter_align_constraint_new (stage, CLUTTER_ALIGN_Y_AXIS, 0.95));
+  clutter_actor_add_child (stage, label);
   easing_mode_label = label;
 
   g_free (text);

@@ -9,11 +9,13 @@
     _Mandatory, \
   }
 
-static const ClutterFuture __clutter_futures[] = {
-  CLUTTER_DEFINE_FUTURE ("Last/Sentinel", CLUTTER_VERSION_1_0, CLUTTER_VERSION_1_0),
+static const ClutterFuture __clutter_futures[CLUTTER_FUTURE_N_FEATURES] = {
+  CLUTTER_DEFINE_FUTURE ("default-easing-state",
+                         G_ENCODE_VERSION (1, 11),
+                         G_ENCODE_VERSION (2, 0)),
 };
 
-static gboolean __clutter_enabled_futures[1] = { FALSE, };
+static gboolean __clutter_enabled_futures[CLUTTER_FUTURE_N_FEATURES] = { FALSE, };
 
 const char *
 clutter_future_get_name (ClutterFutureFeature feature)
@@ -42,12 +44,16 @@ clutter_future_get_mandatory_version (ClutterFutureFeature feature)
 gboolean
 clutter_future_is_enabled (ClutterFutureFeature feature)
 {
+  guint version;
+
   g_assert (feature < CLUTTER_FUTURE_N_FEATURES);
 
-  if (__clutter_futures[feature].optional_version > CLUTTER_VERSION_HEX)
+  version = G_ENCODE_VERSION (CLUTTER_MAJOR_VERSION, CLUTTER_MINOR_VERSION);
+
+  if (__clutter_futures[feature].optional_version > version)
     return FALSE;
 
-  if (__clutter_futures[feature].mandatory_version <= CLUTTER_VERSION_HEX)
+  if (__clutter_futures[feature].mandatory_version <= version)
     return TRUE;
 
   return __clutter_enabled_futures[feature];
@@ -56,5 +62,7 @@ clutter_future_is_enabled (ClutterFutureFeature feature)
 void
 clutter_future_enable (ClutterFutureFeature feature)
 {
+  g_assert (feature < CLUTTER_FUTURE_N_FEATURES);
+
   __clutter_enabled_futures[feature] = TRUE;
 }

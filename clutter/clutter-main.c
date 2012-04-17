@@ -3904,5 +3904,9 @@ clutter_enable_future (ClutterFutureFeature feature)
       return;
     }
 
+  CLUTTER_NOTE (MISC, "Enabling feature '%s' [%d]",
+                clutter_future_get_name (feature),
+                feature);
+
   clutter_future_enable (feature);
 }
