@@ -17472,8 +17472,12 @@ _clutter_actor_create_transition (ClutterActor *actor,
        * directly on the actor; we don't go through the Animatable
        * interface because we know we got here through an animatable
        * property.
+       *
+       * this also applies to unmapped actors, so that we don't transition
+       * actors as soon as the main loop starts
        */
-      if (info->cur_state->easing_duration == 0)
+      if (info->cur_state->easing_duration == 0 ||
+          !CLUTTER_ACTOR_IS_MAPPED (actor))
         {
           clutter_actor_set_animatable_property (actor,
                                                  pspec->param_id,
