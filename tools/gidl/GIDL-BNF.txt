@@ -1,0 +1,139 @@
+boolean_literal ::= "true" | "false"
+
+scoped_name ::= identifier
+	    | ( "::" identifier )
+	    | ( scoped_name "::" identifier )
+
+literal ::= integer_literal
+	| string_literal
+	| character_literal
+	| floating_point_literal
+	| boolean_literal
+
+primary_expr ::= scoped_name | literal | "(" const_expr ")"
+
+unary_operator ::= "-" | "+" | "~"
+
+unary_expr ::= unary_operator primary_expr | primary_expr
+
+mult_expr ::= unary_expr
+	  | mult_expr "*" unary_expr
+	  | mult_expr "/" unary_expr
+	  | mult_expr "%" unary_expr
+
+add_expr ::= mult_expr | add_expr "+" mult_expr | add_expr "-" mult_expr
+
+shift_expr ::= add_expr | shift_expr ">>" add_expr | shift_expr "<<" add_expr
+
+and_expr ::= shift_expr | and_expr "ampersand char" shift_expr
+
+xor_expr ::= and_expr | xor_expr "^" and_expr
+
+or_expr ::= xor_expr | or_expr "|" xor_expr
+
+boolean_type ::= "boolean"
+
+signed_integer_type ::= "int" | "int8" | "int16" | "int32" | "int64" | "long"
+
+unsigned_integer_type ::= "uint" | "uint8" | "uint16" | "uint32" | "uint64" | "ulong"
+
+character_type ::= "char" | "unichar"
+
+integer_type ::= signed_integer_type | unsigned_integer_type | character_type
+
+floating_point_type ::= "float" | "double"
+
+string_type ::= "string"
+
+member ::= type_spec declarators ";"
+
+member_list ::= member { member_list }
+
+struct_type ::= "struct" identifier "{" member_list "}"
+
+union_type ::= "union" identifier "{" member_list "}"
+
+enumerator ::= identifier [ "=" const_expr ]
+
+enum_type ::= "enum" identifier "{" enumerator { "," enumerator } "}"
+
+errordomain_type ::= "errordomain" identifier "{" enumerator { "," enumerator } "}"
+
+simple_type_spec ::= base_type_spec | scoped_name
+
+complex_type_spec ::= struct_type | union_type | enum_type | errordomain_type
+
+type_spec ::= simple_type_spec | complex_type_spec
+
+fixed_array_size ::= "[" positive_integer_constant "]" | "[" "]"
+
+array_declarator ::= identifier fixed_array_size { fixed_array_size }
+
+simple_declarator ::= identifier
+
+complex_declarator ::= array_declarator
+
+declarator ::= simple_declarator | complex_declarator
+
+declarators ::= declarator { "," declarator }
+
+type_declarator ::= type_spec declarators
+
+type_decl ::= "typedef" type_declarator
+	  | struct_type
+	  | union_type
+	  | enum_type
+	  | errordomain_type
+
+const_expr ::= or_expr
+
+const_type ::= integer_type
+	   | char_type
+	   | boolean_type
+	   | floating_point_type
+	   | string_type
+	   | scoped_name
+
+const_decl ::= "const" const_type identifier "=" const_expr
+
+annotation_declarator ::= identifier { "=" const_expr }
+
+annotation_decls ::= "[" annotation_declarator { "," annotation_declarator } "]"
+
+param_type_spec ::= base_type_spec | "string" | scoped_name
+
+method_type_spec ::= param_type_spec | "void"
+
+visibility ::= "readonly" | "writeonly" | "readwrite"
+
+memory ::= "copy" | "reference" | "assign"
+
+property_decl ::= "property" [ visibility ] [ memory ] param_type_spec simple_declarator { "," simple_declarator }
+
+parameter_direction ::= "in" | "out" | "inout"
+
+parameter_declarator ::= parameter_direction param_type_spec simple_declarator
+
+parameter_decls ::= "(" parameter_declarator { "," parameter_declarator } ")" | "(" ")"
+
+signal_decl ::= "signal" method_type_spec identifier parameter_decls
+
+raises_expr ::= "raises" scoped_name { "," scoped_name }
+
+method_decl ::= method_type_spec identifier parameter_decls [ raises_expr ] 
+
+export ::= [annotation_decls] ( type_decl | const_decl | property_decl | signal_decl | method_decl ) ";"
+
+inheritance_spec ::= ":" scoped_name { "," scoped_name }
+
+interface_header ::= [ annotation_decls ] "interface" identifier [ inheritance_spec ]
+
+interface_body ::= { export }
+
+interface_decl ::= interface_header "{" interface_body "}"
+
+definition ::= ( type_decl | const_decl | interface_decl ) ";"
+
+specification ::= definition { specification }
+
+module_decl ::= [ annotation_decls ] "module" identifier "{" { specification } "}"

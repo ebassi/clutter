@@ -1,0 +1,15 @@
+AvailableSince
+DefaultValue
+DeprecatedIn
+EmitterName
+GetterName
+NoEmitter
+NoGetter
+NoSetter
+NotifyProperty
+PropertyDescription
+PropertyName
+RangeMax
+RangeMin
+SetterName
+SignalFlags
