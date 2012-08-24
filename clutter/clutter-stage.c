@@ -49,11 +49,7 @@
 #include <math.h>
 #include <cairo.h>
 
-#define CLUTTER_DISABLE_DEPRECATION_WARNINGS
-
 #include "clutter-stage.h"
-#include "deprecated/clutter-stage.h"
-#include "deprecated/clutter-container.h"
 
 #include "clutter-actor-private.h"
 #include "clutter-backend-private.h"
