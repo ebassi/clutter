@@ -34,7 +34,7 @@
  * #ClutterSwipeAction is a sub-class of #ClutterGestureAction that implements
  * the logic for recognizing swipe gestures.
  *
- * Since: 1.8
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -184,7 +184,7 @@ clutter_swipe_action_class_init (ClutterSwipeActionClass *klass)
    * The ::swept signal is emitted when a swipe gesture is recognized on the
    * attached actor.
    *
-   * Since: 1.8
+   *
    */
   swipe_signals[SWEPT] =
     g_signal_new (I_("swept"),
@@ -212,7 +212,7 @@ clutter_swipe_action_init (ClutterSwipeAction *self)
  *
  * Return value: the newly created #ClutterSwipeAction
  *
- * Since: 1.8
+ *
  */
 ClutterAction *
 clutter_swipe_action_new (void)

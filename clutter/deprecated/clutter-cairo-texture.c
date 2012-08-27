@@ -588,7 +588,7 @@ clutter_cairo_texture_class_init (ClutterCairoTextureClass *klass)
    * The width of the Cairo surface used by the #ClutterCairoTexture
    * actor, in pixels.
    *
-   * Since: 1.0
+   *
    *
    * Deprecated: 1.12
    */
@@ -606,7 +606,7 @@ clutter_cairo_texture_class_init (ClutterCairoTextureClass *klass)
    * The height of the Cairo surface used by the #ClutterCairoTexture
    * actor, in pixels.
    *
-   * Since: 1.0
+   *
    *
    * Deprecated: 1.12
    */
@@ -627,7 +627,7 @@ clutter_cairo_texture_class_init (ClutterCairoTextureClass *klass)
    * If :auto-resize is set to %TRUE the surface contents will also
    * be invalidated automatically.
    *
-   * Since: 1.8
+   *
    *
    * Deprecated: 1.12
    */
@@ -659,7 +659,7 @@ clutter_cairo_texture_class_init (ClutterCairoTextureClass *klass)
    *
    * Return value: the newly created #cairo_surface_t for the texture
    *
-   * Since: 1.6
+   *
    *
    * Deprecated: 1.12
    */
@@ -693,7 +693,7 @@ clutter_cairo_texture_class_init (ClutterCairoTextureClass *klass)
    * Return value: %TRUE if the signal emission should stop, and %FALSE
    *   to continue
    *
-   * Since: 1.8
+   *
    *
    * Deprecated: 1.12
    */
@@ -742,7 +742,7 @@ clutter_cairo_texture_init (ClutterCairoTexture *self)
  *
  * Return value: the newly created #ClutterCairoTexture actor
  *
- * Since: 1.0
+ *
  *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
@@ -858,7 +858,7 @@ clutter_cairo_texture_create_region_internal (ClutterCairoTexture *self,
  * Return value: a newly created Cairo context. Use cairo_destroy()
  *   to upload the contents of the context when done drawing
  *
- * Since: 1.0
+ *
  *
  * Deprecated: 1.8: Use the #ClutterCairoTexture::draw signal and
  *   clutter_cairo_texture_invalidate_rectangle() to obtain a
@@ -893,7 +893,7 @@ clutter_cairo_texture_create_region (ClutterCairoTexture *self,
  *
  * See also: clutter_cairo_texture_invalidate()
  *
- * Since: 1.8
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 void
@@ -953,7 +953,7 @@ clutter_cairo_texture_invalidate_rectangle (ClutterCairoTexture   *self,
  *
  * See also: clutter_cairo_texture_invalidate_rectangle()
  *
- * Since: 1.8
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 void
@@ -980,7 +980,7 @@ clutter_cairo_texture_invalidate (ClutterCairoTexture *self)
  * Return value: a newly created Cairo context. Use cairo_destroy()
  *   to upload the contents of the context when done drawing
  *
- * Since: 1.0
+ *
  *
  * Deprecated: 1.8: Use the #ClutterCairoTexture::draw signal and
  *   the clutter_cairo_texture_invalidate() function to obtain a
@@ -1009,7 +1009,7 @@ clutter_cairo_texture_create (ClutterCairoTexture *self)
  * clutter_cairo_texture_invalidate_rectangle() or
  * clutter_cairo_texture_invalidate().
  *
- * Since: 1.0
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 void
@@ -1054,7 +1054,7 @@ clutter_cairo_texture_set_surface_size (ClutterCairoTexture *self,
  *
  * Retrieves the surface width and height for @self.
  *
- * Since: 1.0
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 void
@@ -1082,7 +1082,7 @@ clutter_cairo_texture_get_surface_size (ClutterCairoTexture *self,
  * Calling this function from within a #ClutterCairoTexture::draw
  * signal handler will clear the invalidated area.
  *
- * Since: 1.0
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 void
@@ -1133,7 +1133,7 @@ clutter_cairo_texture_clear (ClutterCairoTexture *self)
  * the actor. If the allocation changes, the contents of the
  * #ClutterCairoTexture will also be invalidated automatically.
  *
- * Since: 1.8
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 void
@@ -1167,7 +1167,7 @@ clutter_cairo_texture_set_auto_resize (ClutterCairoTexture *self,
  * Return value: %TRUE if the #ClutterCairoTexture should track the
  *   allocation, and %FALSE otherwise
  *
- * Since: 1.8
+ *
  * Deprecated: 1.12: Use #ClutterCanvas instead
  */
 gboolean

@@ -1016,7 +1016,7 @@ _clutter_events_evdev_uninit (ClutterBackend *backend)
  *
  * This function should only be called after clutter has been initialized.
  *
- * Since: 1.10
+ *
  * Stability: unstable
  */
 void
@@ -1071,7 +1071,7 @@ clutter_evdev_release_devices (void)
  *
  * This function should only be called after clutter has been initialized.
  *
- * Since: 1.10
+ *
  * Stability: unstable
  */
 void

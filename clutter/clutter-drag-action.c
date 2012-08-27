@@ -702,7 +702,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * When read, this property will always return a valid drag
    * threshold, either as set or the default one.
    *
-   * Since: 1.4
+   *
    */
   drag_props[PROP_X_DRAG_THRESHOLD] =
     g_param_spec_int ("x-drag-threshold",
@@ -730,7 +730,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * When read, this property will always return a valid drag
    * threshold, either as set or the default one.
    *
-   * Since: 1.4
+   *
    */
   drag_props[PROP_Y_DRAG_THRESHOLD] =
     g_param_spec_int ("y-drag-threshold",
@@ -752,7 +752,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * Setting this property has no effect on the #ClutterActor argument
    * passed to the #ClutterDragAction signals
    *
-   * Since: 1.4
+   *
    */
   drag_props[PROP_DRAG_HANDLE] =
     g_param_spec_object ("drag-handle",
@@ -766,7 +766,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    *
    * Constraints the dragging action to the specified axis
    *
-   * Since: 1.4
+   *
    */
   drag_props[PROP_DRAG_AXIS] =
     g_param_spec_enum ("drag-axis",
@@ -783,7 +783,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * actor position) to the specified #ClutterRect, in parent's
    * coordinates.
    *
-   * Since: 1.12
+   *
    */
   drag_props[PROP_DRAG_AREA] =
     g_param_spec_boxed ("drag-area",
@@ -797,7 +797,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    *
    * Whether the #ClutterDragAction:drag-area property has been set.
    *
-   * Since: 1.12
+   *
    */
   drag_props[PROP_DRAG_AREA_SET] =
     g_param_spec_boolean ("drag-area-set",
@@ -829,7 +829,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * #ClutterDragAction:x-drag-threshold and
    * #ClutterDragAction:y-drag-threshold properties
    *
-   * Since: 1.4
+   *
    */
   drag_signals[DRAG_BEGIN] =
     g_signal_new (I_("drag-begin"),
@@ -870,7 +870,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * Return value: %TRUE if the drag should continue, and %FALSE
    *   if it should be stopped.
    *
-   * Since: 1.12
+   *
    */
   drag_signals[DRAG_PROGRESS] =
     g_signal_new (I_("drag-progress"),
@@ -911,7 +911,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * #ClutterDragAction::drag-progress signal and return %FALSE from the
    * handler.
    *
-   * Since: 1.4
+   *
    */
   drag_signals[DRAG_MOTION] =
     g_signal_new (I_("drag-motion"),
@@ -939,7 +939,7 @@ clutter_drag_action_class_init (ClutterDragActionClass *klass)
    * This signal is emitted if and only if the #ClutterDragAction::drag-begin
    * signal has been emitted first
    *
-   * Since: 1.4
+   *
    */
   drag_signals[DRAG_END] =
     g_signal_new (I_("drag-end"),
@@ -969,7 +969,7 @@ clutter_drag_action_init (ClutterDragAction *self)
  *
  * Return value: the newly created #ClutterDragAction
  *
- * Since: 1.4
+ *
  */
 ClutterAction *
 clutter_drag_action_new (void)
@@ -992,7 +992,7 @@ clutter_drag_action_new (void)
  * drag threshold stored in the #ClutterSettings:dnd-drag-threshold
  * property of #ClutterSettings will be used.
  *
- * Since: 1.4
+ *
  */
 void
 clutter_drag_action_set_drag_threshold (ClutterDragAction *action,
@@ -1041,7 +1041,7 @@ clutter_drag_action_set_drag_threshold (ClutterDragAction *action,
  * this function will return the default drag threshold value as stored
  * by the #ClutterSettings:dnd-drag-threshold property of #ClutterSettings.
  *
- * Since: 1.4
+ *
  */
 void
 clutter_drag_action_get_drag_threshold (ClutterDragAction *action,
@@ -1083,7 +1083,7 @@ on_drag_handle_destroy (ClutterActor      *handle,
  *
  * Sets the actor to be used as the drag handle.
  *
- * Since: 1.4
+ *
  */
 void
 clutter_drag_action_set_drag_handle (ClutterDragAction *action,
@@ -1123,7 +1123,7 @@ clutter_drag_action_set_drag_handle (ClutterDragAction *action,
  * Return value: (transfer none): a #ClutterActor, used as the drag
  *   handle, or %NULL if none was set
  *
- * Since: 1.4
+ *
  */
 ClutterActor *
 clutter_drag_action_get_drag_handle (ClutterDragAction *action)
@@ -1140,7 +1140,7 @@ clutter_drag_action_get_drag_handle (ClutterDragAction *action)
  *
  * Restricts the dragging action to a specific axis
  *
- * Since: 1.4
+ *
  */
 void
 clutter_drag_action_set_drag_axis (ClutterDragAction *action,
@@ -1170,7 +1170,7 @@ clutter_drag_action_set_drag_axis (ClutterDragAction *action,
  *
  * Return value: the axis constraint
  *
- * Since: 1.4
+ *
  */
 ClutterDragAxis
 clutter_drag_action_get_drag_axis (ClutterDragAction *action)
@@ -1190,7 +1190,7 @@ clutter_drag_action_get_drag_axis (ClutterDragAction *action)
  * Retrieves the coordinates, in stage space, of the press event
  * that started the dragging
  *
- * Since: 1.4
+ *
  */
 void
 clutter_drag_action_get_press_coords (ClutterDragAction *action,
@@ -1217,7 +1217,7 @@ clutter_drag_action_get_press_coords (ClutterDragAction *action,
  * Retrieves the coordinates, in stage space, of the latest motion
  * event during the dragging
  *
- * Since: 1.4
+ *
  */
 void
 clutter_drag_action_get_motion_coords (ClutterDragAction *action,

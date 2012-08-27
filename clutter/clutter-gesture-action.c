@@ -48,7 +48,7 @@
  *   g_signal_connect (action, "gesture-end", G_CALLBACK (on_gesture_end), NULL);
  * ]|
  *
- * Since: 1.8
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -397,7 +397,7 @@ clutter_gesture_action_class_init (ClutterGestureActionClass *klass)
    * Return value: %TRUE if the gesture should start, and %FALSE if
    *   the gesture should be ignored.
    *
-   * Since: 1.8
+   *
    */
   gesture_signals[GESTURE_BEGIN] =
     g_signal_new (I_("gesture-begin"),
@@ -420,7 +420,7 @@ clutter_gesture_action_class_init (ClutterGestureActionClass *klass)
    * Return value: %TRUE if the gesture should continue, and %FALSE if
    *   the gesture should be cancelled.
    *
-   * Since: 1.8
+   *
    */
   gesture_signals[GESTURE_PROGRESS] =
     g_signal_new (I_("gesture-progress"),
@@ -443,7 +443,7 @@ clutter_gesture_action_class_init (ClutterGestureActionClass *klass)
    * This signal is emitted if and only if the #ClutterGestureAction::gesture-begin
    * signal has been emitted first.
    *
-   * Since: 1.8
+   *
    */
   gesture_signals[GESTURE_END] =
     g_signal_new (I_("gesture-end"),
@@ -466,7 +466,7 @@ clutter_gesture_action_class_init (ClutterGestureActionClass *klass)
    * This signal is emitted if and only if the #ClutterGestureAction::gesture-begin
    * signal has been emitted first.
    *
-   * Since: 1.8
+   *
    */
   gesture_signals[GESTURE_CANCEL] =
     g_signal_new (I_("gesture-cancel"),
@@ -496,7 +496,7 @@ clutter_gesture_action_init (ClutterGestureAction *self)
  *
  * Return value: the newly created #ClutterGestureAction
  *
- * Since: 1.8
+ *
  */
 ClutterAction *
 clutter_gesture_action_new (void)
@@ -514,7 +514,7 @@ clutter_gesture_action_new (void)
  * Retrieves the coordinates, in stage space, of the press event
  * that started the dragging for an specific pointer device
  *
- * Since: 1.8
+ *
  */
 void
 clutter_gesture_action_get_press_coords (ClutterGestureAction *action,
@@ -548,7 +548,7 @@ clutter_gesture_action_get_press_coords (ClutterGestureAction *action,
  * Retrieves the coordinates, in stage space, of the latest motion
  * event during the dragging
  *
- * Since: 1.8
+ *
  */
 void
 clutter_gesture_action_get_motion_coords (ClutterGestureAction *action,
@@ -580,7 +580,7 @@ clutter_gesture_action_get_motion_coords (ClutterGestureAction *action,
  * Retrieves the coordinates, in stage space, of the point where the pointer
  * device was last released.
  *
- * Since: 1.8
+ *
  */
 void
 clutter_gesture_action_get_release_coords (ClutterGestureAction *action,
@@ -610,7 +610,7 @@ clutter_gesture_action_get_release_coords (ClutterGestureAction *action,
  *
  * Return value: the number of points to trigger the gesture.
  *
- * Since: 1.12
+ *
  */
 gint
 clutter_gesture_action_get_n_touch_points (ClutterGestureAction *action)
@@ -627,7 +627,7 @@ clutter_gesture_action_get_n_touch_points (ClutterGestureAction *action)
  *
  * Sets the number of points needed to trigger the gesture.
  *
- * Since: 1.12
+ *
  */
 void
 clutter_gesture_action_set_n_touch_points (ClutterGestureAction *action,
