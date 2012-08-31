@@ -1381,3 +1381,42 @@ clutter_matrix_init_from_matrix (ClutterMatrix       *a,
 {
   return memcpy (a, b, sizeof (ClutterMatrix));
 }
+
+/**
+ * clutter_matrix_determinant:
+ * @matrix: a #ClutterMatrix
+ *
+ * Calculates the determinant of the @matrix.
+ *
+ * Return value: the determinant of the #ClutterMatrix
+ *
+ * Since: 1.12
+ */
+float
+clutter_matrix_determinant (const ClutterMatrix *matrix)
+{
+  return matrix->xw * matrix->yz * matrix->zy * matrix->wz
+       - matrix->xz * matrix->yw * matrix->zy * matrix->wz
+       - matrix->xw * matrix->yy * matrix->zz * matrix->wz
+       + matrix->xy * matrix->yw * matrix->zz * matrix->wz
+       + matrix->xz * matrix->yy * matrix->zw * matrix->wz
+       - matrix->xy * matrix->yz * matrix->zw * matrix->wz
+       - matrix->xw * matrix->yz * matrix->zx * matrix->wy
+       + matrix->xz * matrix->yw * matrix->zx * matrix->wy
+       + matrix->xw * matrix->yx * matrix->zz * matrix->wy
+       - matrix->xx * matrix->yw * matrix->zz * matrix->wy
+       - matrix->xz * matrix->yx * matrix->zw * matrix->wy
+       + matrix->xx * matrix->yz * matrix->zw * matrix->wy
+       + matrix->xw * matrix->yy * matrix->zx * matrix->wz
+       - matrix->xy * matrix->yw * matrix->zx * matrix->wz
+       - matrix->xw * matrix->yx * matrix->zy * matrix->wz
+       + matrix->xx * matrix->yw * matrix->zy * matrix->wz
+       + matrix->xy * matrix->yx * matrix->zw * matrix->wz
+       - matrix->xx * matrix->yy * matrix->zw * matrix->wz
+       - matrix->xz * matrix->yy * matrix->zx * matrix->ww
+       + matrix->xy * matrix->yz * matrix->zx * matrix->ww
+       + matrix->xz * matrix->yx * matrix->zy * matrix->ww
+       - matrix->xx * matrix->yz * matrix->zy * matrix->ww
+       - matrix->xy * matrix->yx * matrix->zz * matrix->ww
+       + matrix->xx * matrix->yy * matrix->zz * matrix->ww;
+}

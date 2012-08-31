@@ -908,6 +908,7 @@ clutter_margin_free
 clutter_margin_get_type
 clutter_margin_new
 clutter_matrix_alloc
+clutter_matrix_determinant
 clutter_matrix_free
 clutter_matrix_get_type
 clutter_matrix_init_identity

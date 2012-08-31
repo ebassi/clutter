@@ -3326,6 +3326,7 @@ clutter_matrix_free
 clutter_matrix_init_from_array
 clutter_matrix_init_from_matrix
 clutter_matrix_init_identity
+clutter_matrix_determinant
 
 <SUBSECTION>
 clutter_knot_copy
