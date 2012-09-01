@@ -914,6 +914,7 @@ clutter_matrix_get_type
 clutter_matrix_init_identity
 clutter_matrix_init_from_array
 clutter_matrix_init_from_matrix
+clutter_matrix_normalize
 clutter_media_get_audio_volume
 clutter_media_get_buffer_fill
 clutter_media_get_can_seek

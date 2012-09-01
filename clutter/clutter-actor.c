@@ -1054,6 +1054,9 @@ static inline void clutter_actor_set_margin_internal (ClutterActor *self,
                                                       gfloat        margin,
                                                       GParamSpec   *pspec);
 
+static void clutter_actor_set_child_transform_internal (ClutterActor        *self,
+                                                        const ClutterMatrix *transform);
+
 /* Helper macro which translates by the anchor coord, applies the
    given transformation and then translates back */
 #define TRANSFORM_ABOUT_ANCHOR_COORD(a,m,c,_transform)  G_STMT_START { \
@@ -4224,6 +4227,7 @@ _clutter_actor_get_transform_info (ClutterActor *self)
       info = g_slice_new (ClutterTransformInfo);
 
       *info = default_transform_info;
+      clutter_matrix_init_identity (&info->child_transform);
 
       g_object_set_qdata_full (G_OBJECT (self), quark_actor_transform_info,
                                info,
@@ -7196,7 +7200,8 @@ clutter_actor_class_init (ClutterActorClass *klass)
                         P_("Children transformation matrix"),
                         CLUTTER_TYPE_MATRIX,
                         G_PARAM_READWRITE |
-                        G_PARAM_STATIC_STRINGS);
+                        G_PARAM_STATIC_STRINGS |
+                        CLUTTER_PARAM_ANIMATABLE);
 
   /**
    * ClutterActor:child-transform-set:
@@ -14628,6 +14633,10 @@ clutter_actor_set_animatable_property (ClutterActor *actor,
                                          pspec);
       break;
 
+    case PROP_CHILD_TRANSFORM:
+      clutter_actor_set_child_transform_internal (actor, g_value_get_boxed (value));
+      break;
+
     default:
       g_object_set_property (obj, pspec->name, value);
       break;
@@ -18624,6 +18633,9 @@ _clutter_actor_create_transition (ClutterActor *actor,
    */
   if (info->cur_state->easing_duration == 0)
     {
+      CLUTTER_NOTE (ANIMATION, "Easing duration=0, immediate set for '%s::%s'",
+                    _clutter_actor_get_debug_name (actor),
+                    pspec->name);
       clutter_actor_set_animatable_property (actor,
                                              pspec->param_id,
                                              &final,
@@ -19930,6 +19942,35 @@ done:
   g_ptr_array_free (event_tree, TRUE);
 }
 
+static void
+clutter_actor_set_child_transform_internal (ClutterActor        *self,
+                                            const ClutterMatrix *transform)
+{
+  ClutterTransformInfo *info = _clutter_actor_get_transform_info (self);
+  ClutterActorIter iter;
+  ClutterActor *child;
+  GObject *obj;
+  gboolean was_set = info->child_transform_set;
+
+  clutter_matrix_init_from_matrix (&info->child_transform, transform);
+
+  /* if it's the identity matrix, we need to toggle the boolean flag */
+  info->child_transform_set = !cogl_matrix_is_identity (transform);
+
+  /* we need to reset the transform_valid flag on each child */
+  clutter_actor_iter_init (&iter, self);
+  while (clutter_actor_iter_next (&iter, &child))
+    child->priv->transform_valid = FALSE;
+
+  clutter_actor_queue_redraw (self);
+
+  obj = G_OBJECT (self);
+  g_object_notify_by_pspec (obj, obj_props[PROP_CHILD_TRANSFORM]);
+
+  if (was_set != info->child_transform_set)
+    g_object_notify_by_pspec (obj, obj_props[PROP_CHILD_TRANSFORM_SET]);
+}
+
 /**
  * clutter_actor_set_child_transform:
  * @self: a #ClutterActor
@@ -19947,32 +19988,21 @@ void
 clutter_actor_set_child_transform (ClutterActor        *self,
                                    const ClutterMatrix *transform)
 {
-  ClutterTransformInfo *info;
-  ClutterActorIter iter;
-  ClutterActor *child;
-  GObject *obj;
+  const ClutterTransformInfo *info;
+  ClutterMatrix new_transform;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info (self);
+  info = _clutter_actor_get_transform_info_or_defaults (self);
 
   if (transform != NULL)
-    clutter_matrix_init_from_matrix (&info->child_transform, transform);
+    clutter_matrix_init_from_matrix (&new_transform, transform);
   else
-    clutter_matrix_init_identity (&info->child_transform);
+    clutter_matrix_init_identity (&new_transform);
 
-  info->child_transform_set = transform != NULL;
-
-  /* we need to reset the transform_valid flag on each child */
-  clutter_actor_iter_init (&iter, self);
-  while (clutter_actor_iter_next (&iter, &child))
-    child->priv->transform_valid = FALSE;
-
-  clutter_actor_queue_redraw (self);
-
-  obj = G_OBJECT (self);
-  g_object_notify_by_pspec (obj, obj_props[PROP_CHILD_TRANSFORM]);
-  g_object_notify_by_pspec (obj, obj_props[PROP_CHILD_TRANSFORM_SET]);
+  _clutter_actor_create_transition (self, obj_props[PROP_CHILD_TRANSFORM],
+                                    &info->child_transform,
+                                    &new_transform);
 }
 
 /**

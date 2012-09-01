@@ -422,6 +422,17 @@ ClutterVertex *clutter_vertex_copy     (const ClutterVertex *vertex);
 void           clutter_vertex_free     (ClutterVertex       *vertex);
 gboolean       clutter_vertex_equal    (const ClutterVertex *vertex_a,
                                         const ClutterVertex *vertex_b);
+CLUTTER_AVAILABLE_IN_1_12
+float          clutter_vertex_length   (const ClutterVertex *vertex);
+CLUTTER_AVAILABLE_IN_1_12
+void           clutter_vertex_normalize (ClutterVertex       *vertex);
+CLUTTER_AVAILABLE_IN_1_12
+float          clutter_vertex_dot      (const ClutterVertex *v1,
+                                        const ClutterVertex *v2);
+CLUTTER_AVAILABLE_IN_1_12
+void           clutter_vertex_cross     (const ClutterVertex *v1,
+                                         const ClutterVertex *v2,
+                                         ClutterVertex       *res);
 
 /**
  * ClutterActorBox:
@@ -711,6 +722,8 @@ CLUTTER_AVAILABLE_IN_1_12
 void            clutter_matrix_free             (ClutterMatrix       *matrix);
 CLUTTER_AVAILABLE_IN_1_12
 float           clutter_matrix_determinant      (const ClutterMatrix *matrix);
+CLUTTER_AVAILABLE_IN_1_12
+ClutterMatrix * clutter_matrix_normalize        (ClutterMatrix       *matrix);
 
 G_END_DECLS
 

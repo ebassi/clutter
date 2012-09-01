@@ -46,6 +46,7 @@
 G_BEGIN_DECLS
 
 typedef struct _ClutterMainContext      ClutterMainContext;
+typedef struct _ClutterVertex4          ClutterVertex4;
 
 #define CLUTTER_REGISTER_VALUE_TRANSFORM_TO(TYPE_TO,func)             { \
   g_value_register_transform_func (g_define_type_id, TYPE_TO, func);    \
@@ -264,6 +265,29 @@ void  _clutter_util_fully_transform_vertices (const CoglMatrix    *modelview,
 void _clutter_util_rectangle_union (const cairo_rectangle_int_t *src1,
                                     const cairo_rectangle_int_t *src2,
                                     cairo_rectangle_int_t       *dest);
+
+
+struct _ClutterVertex4
+{
+  float x;
+  float y;
+  float z;
+  float w;
+};
+
+void
+_clutter_util_vertex4_interpolate (const ClutterVertex4 *a,
+                                   const ClutterVertex4 *b,
+                                   double                progress,
+                                   ClutterVertex4       *res);
+
+gboolean
+_clutter_util_matrix_decompose (const ClutterMatrix *src,
+                                ClutterVertex       *scale_p,
+                                float                shear_p[3],
+                                ClutterVertex       *rotate_p,
+                                ClutterVertex       *translate_p,
+                                ClutterVertex4      *perspective_p);
 
 typedef struct _ClutterPlane
 {
