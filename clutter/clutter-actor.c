@@ -2417,13 +2417,48 @@ static void clutter_actor_real_allocate (ClutterActor           *self,
                                          const ClutterActorBox  *box,
                                          ClutterAllocationFlags  flags);
 
+static void
+clutter_actor_real_layout_children (ClutterActor *self)
+{
+  ClutterActorPrivate *priv = self->priv;
+
+  if (priv->layout_manager != NULL)
+    {
+      ClutterContainer *container = CLUTTER_CONTAINER (self);
+      ClutterActorBox children_box;
+      ClutterActorBox allocation;
+
+      allocation = self->priv->allocation;
+
+      /* normalize the box passed to the layout manager */
+      children_box.x1 = children_box.y1 = 0.f;
+      children_box.x2 = allocation.x2 - allocation.x1;
+      children_box.y2 = allocation.y2 - allocation.y1;
+
+      CLUTTER_NOTE (LAYOUT,
+                    "Allocating %d children of %s "
+                    "at { %.2f, %.2f - %.2f x %.2f } "
+                    "using %s",
+                    priv->n_children,
+                    _clutter_actor_get_debug_name (self),
+                    allocation.x1,
+                    allocation.y1,
+                    (allocation.x2 - allocation.x1),
+                    (allocation.y2 - allocation.y1),
+                    G_OBJECT_TYPE_NAME (priv->layout_manager));
+
+      clutter_layout_manager_allocate (priv->layout_manager,
+                                       container,
+                                       &children_box,
+                                       CLUTTER_ALLOCATION_NONE);
+    }
+}
+
 static inline void
 clutter_actor_maybe_layout_children (ClutterActor           *self,
                                      const ClutterActorBox  *allocation,
                                      ClutterAllocationFlags  flags)
 {
-  ClutterActorPrivate *priv = self->priv;
-
   /* this is going to be a bit hard to follow, so let's put an explanation
    * here.
    *
@@ -2456,50 +2491,16 @@ clutter_actor_maybe_layout_children (ClutterActor           *self,
    */
 
   if (CLUTTER_ACTOR_GET_CLASS (self)->allocate == clutter_actor_real_allocate)
-    goto check_layout;
+    goto layout_children;
 
   if ((flags & CLUTTER_DELEGATE_LAYOUT) != 0)
-    goto check_layout;
+    goto layout_children;
 
   return;
 
-check_layout:
-  if (priv->n_children != 0 &&
-      priv->layout_manager != NULL)
-    {
-      ClutterContainer *container = CLUTTER_CONTAINER (self);
-      ClutterAllocationFlags children_flags;
-      ClutterActorBox children_box;
-
-      /* normalize the box passed to the layout manager */
-      children_box.x1 = children_box.y1 = 0.f;
-      children_box.x2 = (allocation->x2 - allocation->x1);
-      children_box.y2 = (allocation->y2 - allocation->y1);
-
-      /* remove the DELEGATE_LAYOUT flag; this won't be passed to
-       * the actor's children, since it refers only to the current
-       * actor's allocation.
-       */
-      children_flags = flags;
-      children_flags &= ~CLUTTER_DELEGATE_LAYOUT;
-
-      CLUTTER_NOTE (LAYOUT,
-                    "Allocating %d children of %s "
-                    "at { %.2f, %.2f - %.2f x %.2f } "
-                    "using %s",
-                    priv->n_children,
-                    _clutter_actor_get_debug_name (self),
-                    allocation->x1,
-                    allocation->y1,
-                    (allocation->x2 - allocation->x1),
-                    (allocation->y2 - allocation->y1),
-                    G_OBJECT_TYPE_NAME (priv->layout_manager));
-
-      clutter_layout_manager_allocate (priv->layout_manager,
-                                       container,
-                                       &children_box,
-                                       children_flags);
-    }
+layout_children:
+  if (self->priv->n_children != 0)
+    CLUTTER_ACTOR_GET_CLASS (self)->layout_children (self);
 }
 
 static void
@@ -6119,6 +6120,7 @@ clutter_actor_class_init (ClutterActorClass *klass)
   klass->get_preferred_width = clutter_actor_real_get_preferred_width;
   klass->get_preferred_height = clutter_actor_real_get_preferred_height;
   klass->allocate = clutter_actor_real_allocate;
+  klass->layout_children = clutter_actor_real_layout_children;
   klass->queue_redraw = clutter_actor_real_queue_redraw;
   klass->queue_relayout = clutter_actor_real_queue_relayout;
   klass->apply_transform = clutter_actor_real_apply_transform;
