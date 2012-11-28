@@ -147,7 +147,9 @@ struct _ClutterActor
  *   clutter_actor_get_preferred_height()
  * @allocate: virtual function, used when settings the coordinates of an
  *   actor; it is used by clutter_actor_allocate(); it must chain up to
- *   the parent's implementation
+ *   the parent's implementation. This virtual function is deprecated, and
+ *   it should not be overridden in newly written code: override the
+ *   #ClutterActorClass.layout_children() virtual function instead.
  * @apply_transform: virtual function, used when applying the transformations
  *   to an actor before painting it or when transforming coordinates or
  *   the allocation; it must chain up to the parent's implementation
@@ -182,6 +184,11 @@ struct _ClutterActor
  * @paint_node: virtual function for creating paint nodes and attaching
  *   them to the render tree
  * @touch_event: signal class closure for #ClutterActor::touch-event
+ * @layout_children: virtual function that should be overridden in order
+ *   to lay out the children of a #ClutterActor; this function will only
+ *   be called if the actor has children. The default implementation of
+ *   this function will use the #ClutterLayoutManager delegate set using
+ *   the #ClutterActor:layout-manager property.
  *
  * Base class for actors.
  */

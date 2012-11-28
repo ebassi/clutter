@@ -2488,10 +2488,25 @@ clutter_actor_maybe_layout_children (ClutterActor           *self,
    * if neither of these two checks yields a positive result, we just
    * assume that the ::allocate() virtual function that resulted in this
    * function being called will also allocate the children of the actor.
+   *
+   * it is important to note that this whole dance will go away once we can
+   * break API and remove the allocate() virtual function; once that happens,
+   * we can simply store the new allocation and call ::layout_children().
    */
 
   if (CLUTTER_ACTOR_GET_CLASS (self)->allocate == clutter_actor_real_allocate)
     goto layout_children;
+#ifdef CLUTTER_ENABLE_DEBUG
+  else
+    {
+      if (G_UNLIKELY (_clutter_diagnostic_enabled ()))
+        _clutter_diagnostic_message ("The ClutterActorClass.allocate() virtual "
+                                     "function is deprecated and it should not "
+                                     "be overridden in newly written code. You "
+                                     "should override the layout_children() "
+                                     "virtual function instead.");
+    }
+#endif
 
   if ((flags & CLUTTER_DELEGATE_LAYOUT) != 0)
     goto layout_children;
