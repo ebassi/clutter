@@ -451,6 +451,13 @@ layout_manager_real_get_preferred_height (ClutterLayoutManager *manager,
 }
 
 static void
+layout_manager_real_layout_actor_children (ClutterLayoutManager *manager,
+                                           ClutterActor         *actor)
+{
+  LAYOUT_MANAGER_WARN_NOT_IMPLEMENTED (manager, "layout_actor_children");
+}
+
+static void
 layout_manager_real_allocate (ClutterLayoutManager   *manager,
                               ClutterContainer       *container,
                               const ClutterActorBox  *allocation,
@@ -600,6 +607,7 @@ clutter_layout_manager_class_init (ClutterLayoutManagerClass *klass)
   klass->get_preferred_width = layout_manager_real_get_preferred_width;
   klass->get_preferred_height = layout_manager_real_get_preferred_height;
   klass->allocate = layout_manager_real_allocate;
+  klass->layout_actor_children = layout_manager_real_layout_actor_children;
   klass->create_child_meta = layout_manager_real_create_child_meta;
   klass->get_child_meta_type = layout_manager_real_get_child_meta_type;
 
@@ -1310,4 +1318,38 @@ clutter_layout_manager_list_child_properties (ClutterLayoutManager *manager,
   g_type_class_unref (meta_klass);
 
   return pspecs;
+}
+
+void
+clutter_layout_manager_layout_actor_children (ClutterLayoutManager *manager,
+                                              ClutterActor         *actor)
+{
+  ClutterLayoutManagerClass *klass;
+
+  g_return_if_fail (CLUTTER_IS_LAYOUT_MANAGER (manager));
+  g_return_if_fail (CLUTTER_IS_ACTOR (actor));
+
+  klass = CLUTTER_LAYOUT_MANAGER_GET_CLASS (manager);
+  if (klass->layout_actor_children != layout_manager_real_layout_actor_children)
+    {
+      klass->layout_actor_children (manager, actor);
+      return;
+    }
+
+  /* XXX:2.0 - compatibility mode for 1.x; remove when we remove allocate() */
+  if (klass->allocate != layout_manager_real_allocate)
+    {
+      ClutterActorBox box;
+
+      /* normalize the allocation passed to the layout manager */
+      clutter_actor_get_allocation_box (actor, &box);
+      box.x2 = box.x2 - box.x1;
+      box.y2 = box.y2 - box.y1;
+      box.x1 = 0.f;
+      box.y1 = 0.f;
+
+      klass->allocate (manager, CLUTTER_CONTAINER (actor),
+                       &box,
+                       CLUTTER_ALLOCATION_NONE);
+    }
 }

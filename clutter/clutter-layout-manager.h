@@ -138,6 +138,10 @@ struct _ClutterLayoutManagerClass
 
   void               (* layout_changed)         (ClutterLayoutManager   *manager);
 
+  /* virtual function */
+  void               (* layout_actor_children)  (ClutterLayoutManager   *manager,
+                                                 ClutterActor           *actor);
+
   /*< private >*/
   /* padding for future expansion */
   void (* _clutter_padding_1) (void);
@@ -147,7 +151,6 @@ struct _ClutterLayoutManagerClass
   void (* _clutter_padding_5) (void);
   void (* _clutter_padding_6) (void);
   void (* _clutter_padding_7) (void);
-  void (* _clutter_padding_8) (void);
 };
 
 GType clutter_layout_manager_get_type (void) G_GNUC_CONST;
@@ -209,6 +212,10 @@ CLUTTER_DEPRECATED_IN_1_12
 void               clutter_layout_manager_end_animation         (ClutterLayoutManager   *manager);
 CLUTTER_DEPRECATED_IN_1_12
 gdouble            clutter_layout_manager_get_animation_progress (ClutterLayoutManager   *manager);
+
+CLUTTER_AVAILABLE_IN_1_14
+void               clutter_layout_manager_layout_actor_children (ClutterLayoutManager   *manager,
+                                                                 ClutterActor           *actor);
 
 G_END_DECLS
 
