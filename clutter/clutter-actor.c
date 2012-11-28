@@ -2424,33 +2424,20 @@ clutter_actor_real_layout_children (ClutterActor *self)
 
   if (priv->layout_manager != NULL)
     {
-      ClutterContainer *container = CLUTTER_CONTAINER (self);
-      ClutterActorBox children_box;
-      ClutterActorBox allocation;
-
-      allocation = self->priv->allocation;
-
-      /* normalize the box passed to the layout manager */
-      children_box.x1 = children_box.y1 = 0.f;
-      children_box.x2 = allocation.x2 - allocation.x1;
-      children_box.y2 = allocation.y2 - allocation.y1;
-
       CLUTTER_NOTE (LAYOUT,
                     "Allocating %d children of %s "
                     "at { %.2f, %.2f - %.2f x %.2f } "
                     "using %s",
                     priv->n_children,
                     _clutter_actor_get_debug_name (self),
-                    allocation.x1,
-                    allocation.y1,
-                    (allocation.x2 - allocation.x1),
-                    (allocation.y2 - allocation.y1),
+                    priv->allocation.x1,
+                    priv->allocation.y1,
+                    (priv->allocation.x2 - priv->allocation.x1),
+                    (priv->allocation.y2 - priv->allocation.y1),
                     G_OBJECT_TYPE_NAME (priv->layout_manager));
 
-      clutter_layout_manager_allocate (priv->layout_manager,
-                                       container,
-                                       &children_box,
-                                       CLUTTER_ALLOCATION_NONE);
+      clutter_layout_manager_layout_actor_children (priv->layout_manager,
+                                                    self);
     }
 }
 
