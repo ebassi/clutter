@@ -52,6 +52,7 @@
 
 #define CLUTTER_DISABLE_DEPRECATION_WARNINGS
 #include "clutter-group.h"
+#include "clutter-layout-manager.h"
 
 #include "clutter-actor.h"
 #include "clutter-actor-private.h"

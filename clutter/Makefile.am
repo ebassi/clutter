@@ -275,6 +275,7 @@ deprecated_h = \
 	$(srcdir)/deprecated/clutter-frame-source.h		\
 	$(srcdir)/deprecated/clutter-group.h			\
 	$(srcdir)/deprecated/clutter-input-device.h		\
+	$(srcdir)/deprecated/clutter-layout-manager.h		\
 	$(srcdir)/deprecated/clutter-keysyms.h			\
 	$(srcdir)/deprecated/clutter-main.h			\
 	$(srcdir)/deprecated/clutter-media.h			\

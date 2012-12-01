@@ -32,40 +32,17 @@
  * it has been paired, and it controls the allocation of its children.
  *
  * Any composite or container #ClutterActor subclass can delegate the
- * layouting of its children to a #ClutterLayoutManager. Clutter provides
- * a generic container using #ClutterLayoutManager called #ClutterBox.
+ * layouting of its children to a #ClutterLayoutManager, by using the
+ * #ClutterActor:layout-manager property of #ClutterActor.
  *
  * Clutter provides some simple #ClutterLayoutManager sub-classes, like
  * #ClutterFlowLayout and #ClutterBinLayout.
  *
- * <refsect2 id="ClutterLayoutManager-use-in-Actor">
- *   <title>Using a Layout Manager inside an Actor</title>
- *   <para>In order to use a #ClutterLayoutManager inside a #ClutterActor
- *   sub-class you should invoke clutter_layout_manager_get_preferred_width()
- *   inside the #ClutterActorClass.get_preferred_width() virtual function and
- *   clutter_layout_manager_get_preferred_height() inside the
- *   #ClutterActorClass.get_preferred_height() virtual functions implementation.
- *   You should also call clutter_layout_manager_allocate() inside the
- *   implementation of the #ClutterActorClass.allocate() virtual function.</para>
- *   <para>In order to receive notifications for changes in the layout
- *   manager policies you should also connect to the
- *   #ClutterLayoutManager::layout-changed signal and queue a relayout
- *   on your actor. The following code should be enough if the actor
- *   does not need to perform specific operations whenever a layout
- *   manager changes:</para>
- *   <informalexample><programlisting>
- *  g_signal_connect_swapped (layout_manager,
- *                            "layout-changed",
- *                            G_CALLBACK (clutter_actor_queue_relayout),
- *                            actor);
- *   </programlisting></informalexample>
- * </refsect2>
- *
  * <refsect2 id="ClutterLayoutManager-implementation">
  *   <title>Implementing a ClutterLayoutManager</title>
  *   <para>The implementation of a layout manager does not differ from
- *   the implementation of the size requisition and allocation bits of
- *   #ClutterActor, so you should read the relative documentation
+ *   the implementation of the size requisition and child layout virtual
+ *   functions of #ClutterActor, so you should read the relative documentation
  *   <link linkend="clutter-subclassing-ClutterActor">for subclassing
  *   ClutterActor</link>.</para>
  *   <para>The layout manager implementation can hold a back pointer
@@ -77,173 +54,6 @@
  *   policies then it should emit the #ClutterLayoutManager::layout-changed
  *   signal on itself by using the clutter_layout_manager_layout_changed()
  *   function whenever one of these properties changes.</para>
- * </refsect2>
- *
- * <refsect2 id="ClutterLayoutManager-animation">
- *   <title>Animating a ClutterLayoutManager</title>
- *   <para>A layout manager is used to let a #ClutterContainer take complete
- *   ownership over the layout (that is: the position and sizing) of its
- *   children; this means that using the Clutter animation API, like
- *   clutter_actor_animate(), to animate the position and sizing of a child of
- *   a layout manager it is not going to work properly, as the animation will
- *   automatically override any setting done by the layout manager
- *   itself.</para>
- *   <para>It is possible for a #ClutterLayoutManager sub-class to animate its
- *   children layout by using the base class animation support. The
- *   #ClutterLayoutManager animation support consists of three virtual
- *   functions: #ClutterLayoutManagerClass.begin_animation(),
- *   #ClutterLayoutManagerClass.get_animation_progress(), and
- *   #ClutterLayoutManagerClass.end_animation().</para>
- *   <variablelist>
- *     <varlistentry>
- *       <term><function>begin_animation (duration, easing)</function></term>
- *       <listitem><para>This virtual function is invoked when the layout
- *       manager should begin an animation. The implementation should set up
- *       the state for the animation and create the ancillary objects for
- *       animating the layout. The default implementation creates a
- *       #ClutterTimeline for the given duration and a #ClutterAlpha binding
- *       the timeline to the given easing mode. This function returns a
- *       #ClutterAlpha which should be used to control the animation from
- *       the caller perspective.</para></listitem>
- *     </varlistentry>
- *     <varlistentry>
- *       <term><function>get_animation_progress()</function></term>
- *       <listitem><para>This virtual function should be invoked when animating
- *       a layout manager. It returns the progress of the animation, using the
- *       same semantics as the #ClutterAlpha:alpha value.</para></listitem>
- *     </varlistentry>
- *     <varlistentry>
- *       <term><function>end_animation()</function></term>
- *       <listitem><para>This virtual function is invoked when the animation of
- *       a layout manager ends, and it is meant to be used for bookkeeping the
- *       objects created in the <function>begin_animation()</function>
- *       function. The default implementation will call it implicitly when the
- *       timeline is complete.</para></listitem>
- *     </varlistentry>
- *   </variablelist>
- *   <para>The simplest way to animate a layout is to create a #ClutterTimeline
- *   inside the <function>begin_animation()</function> virtual function, along
- *   with a #ClutterAlpha, and for each #ClutterTimeline::new-frame signal
- *   emission call clutter_layout_manager_layout_changed(), which will cause a
- *   relayout. The #ClutterTimeline::completed signal emission should cause
- *   clutter_layout_manager_end_animation() to be called. The default
- *   implementation provided internally by #ClutterLayoutManager does exactly
- *   this, so most sub-classes should either not override any animation-related
- *   virtual function or simply override #ClutterLayoutManagerClass.begin_animation()
- *   and #ClutterLayoutManagerClass.end_animation() to set up ad hoc state, and then
- *   chain up to the parent's implementation.</para>
- *   <example id="example-ClutterLayoutManager-animation">
- *     <title>Animation of a Layout Manager</title>
- *     <para>The code below shows how a #ClutterLayoutManager sub-class should
- *     provide animating the allocation of its children from within the
- *     #ClutterLayoutManagerClass.allocate() virtual function implementation. The
- *     animation is computed between the last stable allocation performed
- *     before the animation started and the desired final allocation.</para>
- *     <para>The <varname>is_animating</varname> variable is stored inside the
- *     #ClutterLayoutManager sub-class and it is updated by overriding the
- *     #ClutterLayoutManagerClass.begin_animation() and the
- *     #ClutterLayoutManagerClass.end_animation() virtual functions and chaining up
- *     to the base class implementation.</para>
- *     <para>The last stable allocation is stored within a #ClutterLayoutMeta
- *     sub-class used by the implementation.</para>
- *     <programlisting>
- * static void
- * my_layout_manager_allocate (ClutterLayoutManager   *manager,
- *                             ClutterContainer       *container,
- *                             const ClutterActorBox  *allocation,
- *                             ClutterAllocationFlags  flags)
- * {
- *   MyLayoutManager *self = MY_LAYOUT_MANAGER (manager);
- *   ClutterActor *child;
- *
- *   for (child = clutter_actor_get_first_child (CLUTTER_ACTOR (container));
- *        child != NULL;
- *        child = clutter_actor_get_next_sibling (child))
- *     {
- *       ClutterLayoutMeta *meta;
- *       MyLayoutMeta *my_meta;
- *
- *       /&ast; retrieve the layout meta-object &ast;/
- *       meta = clutter_layout_manager_get_child_meta (manager,
- *                                                     container,
- *                                                     child);
- *       my_meta = MY_LAYOUT_META (meta);
- *
- *       /&ast; compute the desired allocation for the child &ast;/
- *       compute_allocation (self, my_meta, child,
- *                           allocation, flags,
- *                           &amp;child_box);
- *
- *       /&ast; this is the additional code that deals with the animation
- *        &ast; of the layout manager
- *        &ast;/
- *       if (!self-&gt;is_animating)
- *         {
- *           /&ast; store the last stable allocation for later use &ast;/
- *           my_meta-&gt;last_alloc = clutter_actor_box_copy (&amp;child_box);
- *         }
- *       else
- *         {
- *           ClutterActorBox end = { 0, };
- *           gdouble p;
- *
- *           /&ast; get the progress of the animation &ast;/
- *           p = clutter_layout_manager_get_animation_progress (manager);
- *
- *           if (my_meta-&gt;last_alloc != NULL)
- *             {
- *               /&ast; copy the desired allocation as the final state &ast;/
- *               end = child_box;
- *
- *               /&ast; then interpolate the initial and final state
- *                &ast; depending on the progress of the animation,
- *                &ast; and put the result inside the box we will use
- *                &ast; to allocate the child
- *                &ast;/
- *               clutter_actor_box_interpolate (my_meta-&gt;last_alloc,
- *                                              &amp;end,
- *                                              p,
- *                                              &amp;child_box);
- *             }
- *           else
- *             {
- *               /&ast; if there is no stable allocation then the child was
- *                &ast; added while animating; one possible course of action
- *                &ast; is to just bail out and fall through to the allocation
- *                &ast; to position the child directly at its final state
- *                &ast;/
- *               my_meta-&gt;last_alloc =
- *                 clutter_actor_box_copy (&amp;child_box);
- *             }
- *         }
- *
- *       /&ast; allocate the child &ast;/
- *       clutter_actor_allocate (child, &child_box, flags);
- *     }
- * }
- *     </programlisting>
- *   </example>
- *   <para>Sub-classes of #ClutterLayoutManager that support animations of the
- *   layout changes should call clutter_layout_manager_begin_animation()
- *   whenever a layout property changes value, e.g.:</para>
- *   <informalexample>
- *     <programlisting>
- * if (self->orientation != new_orientation)
- *   {
- *     ClutterLayoutManager *manager;
- *
- *     self->orientation = new_orientation;
- *
- *     manager = CLUTTER_LAYOUT_MANAGER (self);
- *     clutter_layout_manager_layout_changed (manager);
- *     clutter_layout_manager_begin_animation (manager, 500, CLUTTER_LINEAR);
- *
- *     g_object_notify (G_OBJECT (self), "orientation");
- *   }
- *     </programlisting>
- *   </informalexample>
- *   <para>The code above will animate a change in the
- *   <varname>orientation</varname> layout property of a layout manager.</para>
  * </refsect2>
  *
  * <refsect2 id="clutter-layout-properties">
@@ -287,7 +97,7 @@
  *   modifier on the property name, for instance:</para>
  *   <informalexample><programlisting>
  * {
- *   "type" : "ClutterBox",
+ *   "type" : "ClutterActor",
  *   "layout-manager" : { "type" : "ClutterTableLayout" },
  *   "children" : [
  *     {
@@ -330,6 +140,7 @@
 #define CLUTTER_DISABLE_DEPRECATION_WARNINGS
 #include "deprecated/clutter-container.h"
 #include "deprecated/clutter-alpha.h"
+#include "deprecated/clutter-layout-manager.h"
 
 #include "clutter-debug.h"
 #include "clutter-layout-manager.h"
@@ -743,11 +554,14 @@ clutter_layout_manager_get_preferred_height (ClutterLayoutManager *manager,
  *   of @container
  * @flags: the allocation flags
  *
- * Allocates the children of @container given an area
+ * Allocates the children of @container given an area.
  *
- * See also clutter_actor_allocate()
+ * See also clutter_actor_allocate().
  *
  * Since: 1.2
+ *
+ * Deprecated: 1.14: Use clutter_layout_manager_layout_actor_children()
+ *   instead.
  */
 void
 clutter_layout_manager_allocate (ClutterLayoutManager   *manager,
@@ -1320,6 +1134,22 @@ clutter_layout_manager_list_child_properties (ClutterLayoutManager *manager,
   return pspecs;
 }
 
+/**
+ * clutter_layout_manager_layout_actor_children:
+ * @manager: a #ClutterLayoutManager
+ * @actor: the #ClutterActor whose children the @manager should lay out
+ *
+ * Calls the #ClutterLayoutManager.layout_actor_children() virtual function,
+ * if one is set, using the passed @actor.
+ *
+ * If the #ClutterLayoutManager.layout_actor_children() virtual function is
+ * not set, and the @manager class overrides #ClutterLayoutManager.allocate()
+ * then the latter will be called using the actor's normalized allocation.
+ * This allows #ClutterActor to keep using legacy #ClutterLayoutManager
+ * classes.
+ *
+ * Since: 1.14
+ */
 void
 clutter_layout_manager_layout_actor_children (ClutterLayoutManager *manager,
                                               ClutterActor         *actor)

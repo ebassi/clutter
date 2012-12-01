@@ -165,10 +165,6 @@ void               clutter_layout_manager_get_preferred_height  (ClutterLayoutMa
                                                                  gfloat                  for_width,
                                                                  gfloat                 *min_height_p,
                                                                  gfloat                 *nat_height_p);
-void               clutter_layout_manager_allocate              (ClutterLayoutManager   *manager,
-                                                                 ClutterContainer       *container,
-                                                                 const ClutterActorBox  *allocation,
-                                                                 ClutterAllocationFlags  flags);
 
 void               clutter_layout_manager_set_container         (ClutterLayoutManager   *manager,
                                                                  ClutterContainer       *container);
@@ -203,15 +199,6 @@ void               clutter_layout_manager_child_get_property    (ClutterLayoutMa
                                                                  ClutterActor           *actor,
                                                                  const gchar            *property_name,
                                                                  GValue                 *value);
-
-CLUTTER_DEPRECATED_IN_1_12
-ClutterAlpha *     clutter_layout_manager_begin_animation       (ClutterLayoutManager   *manager,
-                                                                 guint                   duration,
-                                                                 gulong                  mode);
-CLUTTER_DEPRECATED_IN_1_12
-void               clutter_layout_manager_end_animation         (ClutterLayoutManager   *manager);
-CLUTTER_DEPRECATED_IN_1_12
-gdouble            clutter_layout_manager_get_animation_progress (ClutterLayoutManager   *manager);
 
 CLUTTER_AVAILABLE_IN_1_14
 void               clutter_layout_manager_layout_actor_children (ClutterLayoutManager   *manager,
