@@ -654,6 +654,8 @@ typedef enum {
 
 struct _ClutterActorPrivate
 {
+  ClutterActorState *state;
+
   /* request mode */
   ClutterRequestMode request_mode;
 
@@ -2973,7 +2975,7 @@ clutter_actor_real_apply_transform (ClutterActor  *self,
   if (priv->transform_valid)
     goto multiply_and_return;
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   /* compute the pivot point given the allocated size */
   pivot_x = (priv->allocation.x2 - priv->allocation.x1)
@@ -2997,7 +2999,7 @@ clutter_actor_real_apply_transform (ClutterActor  *self,
     {
       const ClutterTransformInfo *parent_info;
 
-      parent_info = _clutter_actor_get_transform_info_or_defaults (priv->parent);
+      parent_info = _clutter_actor_peek_transform_info (priv->parent);
       clutter_matrix_init_from_matrix (transform, &(parent_info->child_transform));
     }
   else
@@ -3947,7 +3949,7 @@ _clutter_actor_stop_transitions (ClutterActor *self)
   GHashTableIter iter;
   gpointer value;
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
+  info = _clutter_actor_peek_animation_info (self);
   if (info->transitions == NULL)
     return;
 
@@ -4168,97 +4170,6 @@ clutter_actor_remove_child_internal (ClutterActor                 *self,
   g_object_unref (child);
 }
 
-static const ClutterTransformInfo default_transform_info = {
-  0.0, { 0, },                  /* rotation-x */
-  0.0, { 0, },                  /* rotation-y */
-  0.0, { 0, },                  /* rotation-z */
-
-  1.0, 1.0, 1.0, { 0, },        /* scale */
-
-  { 0, },                       /* anchor XXX:2.0 - remove*/
-
-  CLUTTER_VERTEX_INIT_ZERO,     /* translation */
-
-  0.f,                          /* z-position */
-
-  CLUTTER_POINT_INIT_ZERO,      /* pivot */
-  0.f,                          /* pivot-z */
-
-  CLUTTER_MATRIX_INIT_IDENTITY,
-  FALSE,                        /* transform */
-  CLUTTER_MATRIX_INIT_IDENTITY,
-  FALSE,                        /* child-transform */
-};
-
-/*< private >
- * _clutter_actor_get_transform_info_or_defaults:
- * @self: a #ClutterActor
- *
- * Retrieves the ClutterTransformInfo structure associated to an actor.
- *
- * If the actor does not have a ClutterTransformInfo structure associated
- * to it, then the default structure will be returned.
- *
- * This function should only be used for getters.
- *
- * Return value: a const pointer to the ClutterTransformInfo structure
- */
-const ClutterTransformInfo *
-_clutter_actor_get_transform_info_or_defaults (ClutterActor *self)
-{
-  ClutterTransformInfo *info;
-
-  info = g_object_get_qdata (G_OBJECT (self), quark_actor_transform_info);
-  if (info != NULL)
-    return info;
-
-  return &default_transform_info;
-}
-
-static void
-clutter_transform_info_free (gpointer data)
-{
-  if (data != NULL)
-    g_slice_free (ClutterTransformInfo, data);
-}
-
-/*< private >
- * _clutter_actor_get_transform_info:
- * @self: a #ClutterActor
- *
- * Retrieves a pointer to the ClutterTransformInfo structure.
- *
- * If the actor does not have a ClutterTransformInfo associated to it, one
- * will be created and initialized to the default values.
- *
- * This function should be used for setters.
- *
- * For getters, you should use _clutter_actor_get_transform_info_or_defaults()
- * instead.
- *
- * Return value: (transfer none): a pointer to the ClutterTransformInfo
- *   structure
- */
-ClutterTransformInfo *
-_clutter_actor_get_transform_info (ClutterActor *self)
-{
-  ClutterTransformInfo *info;
-
-  info = g_object_get_qdata (G_OBJECT (self), quark_actor_transform_info);
-  if (info == NULL)
-    {
-      info = g_slice_new (ClutterTransformInfo);
-
-      *info = default_transform_info;
-
-      g_object_set_qdata_full (G_OBJECT (self), quark_actor_transform_info,
-                               info,
-                               clutter_transform_info_free);
-    }
-
-  return info;
-}
-
 static inline void
 clutter_actor_set_pivot_point_internal (ClutterActor       *self,
                                         const ClutterPoint *pivot)
@@ -4332,7 +4243,7 @@ clutter_actor_set_translation_factor (ClutterActor      *self,
   const float *translate_p = NULL;
   GParamSpec *pspec = NULL;
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   switch (axis)
     {
@@ -4411,7 +4322,7 @@ clutter_actor_get_translation (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (translate_x != NULL)
     *translate_x = info->translation.x;
@@ -4485,7 +4396,7 @@ clutter_actor_set_rotation_angle (ClutterActor      *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   switch (axis)
     {
@@ -4531,7 +4442,7 @@ clutter_actor_get_rotation_angle (ClutterActor      *self,
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.0);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   switch (axis)
     {
@@ -4646,7 +4557,7 @@ clutter_actor_set_scale_factor (ClutterActor      *self,
   const double *scale_p = NULL;
   GParamSpec *pspec = NULL;
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   switch (axis)
     {
@@ -5062,7 +4973,7 @@ clutter_actor_set_property (GObject      *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         clutter_actor_set_z_rotation_from_gravity (actor, info->rz_angle,
                                                    g_value_get_enum (value));
       }
@@ -5234,7 +5145,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->fixed_pos.x);
       }
       break;
@@ -5243,7 +5154,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->fixed_pos.y);
       }
       break;
@@ -5256,7 +5167,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->minimum.width);
       }
       break;
@@ -5265,7 +5176,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->minimum.height);
       }
       break;
@@ -5274,7 +5185,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->natural.width);
       }
       break;
@@ -5283,7 +5194,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->natural.height);
       }
       break;
@@ -5373,7 +5284,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_boxed (value, &info->pivot);
       }
       break;
@@ -5382,7 +5293,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_float (value, info->pivot_z);
       }
       break;
@@ -5391,7 +5302,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_float (value, info->translation.x);
       }
       break;
@@ -5400,7 +5311,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_float (value, info->translation.y);
       }
       break;
@@ -5409,7 +5320,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_float (value, info->translation.z);
       }
       break;
@@ -5418,7 +5329,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_double (value, info->scale_x);
       }
       break;
@@ -5427,7 +5338,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_double (value, info->scale_y);
       }
       break;
@@ -5436,7 +5347,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_double (value, info->scale_z);
       }
       break;
@@ -5473,7 +5384,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_double (value, info->rx_angle);
       }
       break;
@@ -5482,7 +5393,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_double (value, info->ry_angle);
       }
       break;
@@ -5491,7 +5402,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_double (value, info->rz_angle);
       }
       break;
@@ -5544,7 +5455,7 @@ clutter_actor_get_property (GObject    *object,
         const ClutterTransformInfo *info;
         gfloat anchor_x;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         clutter_anchor_coord_get_units (actor, &info->anchor,
                                         &anchor_x,
                                         NULL,
@@ -5558,7 +5469,7 @@ clutter_actor_get_property (GObject    *object,
         const ClutterTransformInfo *info;
         gfloat anchor_y;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         clutter_anchor_coord_get_units (actor, &info->anchor,
                                         NULL,
                                         &anchor_y,
@@ -5584,7 +5495,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_boolean (value, info->transform_set);
       }
       break;
@@ -5602,7 +5513,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterTransformInfo *info;
 
-        info = _clutter_actor_get_transform_info_or_defaults (actor);
+        info = _clutter_actor_peek_transform_info (actor);
         g_value_set_boolean (value, info->child_transform_set);
       }
       break;
@@ -5627,7 +5538,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_boolean (value, info->x_expand);
       }
       break;
@@ -5636,7 +5547,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_boolean (value, info->y_expand);
       }
       break;
@@ -5645,7 +5556,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_enum (value, info->x_align);
       }
       break;
@@ -5654,7 +5565,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_enum (value, info->y_align);
       }
       break;
@@ -5663,7 +5574,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->margin.top);
       }
       break;
@@ -5672,7 +5583,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->margin.bottom);
       }
       break;
@@ -5681,7 +5592,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->margin.left);
       }
       break;
@@ -5690,7 +5601,7 @@ clutter_actor_get_property (GObject    *object,
       {
         const ClutterLayoutInfo *info;
 
-        info = _clutter_actor_get_layout_info_or_defaults (actor);
+        info = _clutter_actor_peek_layout_info (actor);
         g_value_set_float (value, info->margin.right);
       }
       break;
@@ -5821,6 +5732,8 @@ clutter_actor_finalize (GObject *object)
   clutter_actor_restore_easing_state (CLUTTER_ACTOR (object));
 
   _clutter_context_release_id (priv->id);
+
+  _clutter_actor_state_free (priv->state);
 
   g_free (priv->name);
 
@@ -8310,6 +8223,8 @@ clutter_actor_init (ClutterActor *self)
 
   self->priv = priv = CLUTTER_ACTOR_GET_PRIVATE (self);
 
+  priv->state = _clutter_actor_state_init (_clutter_actor_state_alloc (), self);
+
   priv->id = _clutter_context_acquire_id (self);
   priv->pick_id = -1;
 
@@ -8351,6 +8266,18 @@ clutter_actor_init (ClutterActor *self)
 
   clutter_actor_save_easing_state (self);
   clutter_actor_set_easing_duration (self, 0);
+}
+
+ClutterActorState *
+_clutter_actor_get_state (ClutterActor *self)
+{
+  return self->priv->state;
+}
+
+const ClutterActorState *
+_clutter_actor_peek_state (ClutterActor *self)
+{
+  return _clutter_actor_get_state (self);
 }
 
 /**
@@ -9064,7 +8991,7 @@ clutter_actor_adjust_width (ClutterActor *self,
   ClutterTextDirection text_dir;
   const ClutterLayoutInfo *info;
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
   text_dir = clutter_actor_get_text_direction (self);
 
   CLUTTER_NOTE (LAYOUT, "Adjusting allocated X and width");
@@ -9103,7 +9030,7 @@ clutter_actor_adjust_height (ClutterActor *self,
 {
   const ClutterLayoutInfo *info;
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
 
   CLUTTER_NOTE (LAYOUT, "Adjusting allocated Y and height");
 
@@ -9198,7 +9125,7 @@ clutter_actor_get_preferred_width (ClutterActor *self,
 
   priv = self->priv;
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
 
   /* we shortcircuit the case of a fixed size set using set_width() */
   if (priv->min_width_set && priv->natural_width_set)
@@ -9335,7 +9262,7 @@ clutter_actor_get_preferred_height (ClutterActor *self,
 
   priv = self->priv;
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
 
   /* we shortcircuit the case of a fixed size set using set_height() */
   if (priv->min_height_set && priv->natural_height_set)
@@ -9972,12 +9899,9 @@ clutter_actor_set_fixed_position_set (ClutterActor *self,
 
       /* Ensure we set back the default fixed position of 0,0 so that setting
 	 just one of x/y always atomically gets 0 for the other */
-      info = _clutter_actor_peek_layout_info (self);
-      if (info != NULL)
-	{
-	  info->fixed_pos.x = 0;
-	  info->fixed_pos.y = 0;
-	}
+      info = _clutter_actor_get_layout_info (self);
+      info->fixed_pos.x = 0.f;
+      info->fixed_pos.y = 0.f;
     }
 
   self->priv->position_set = is_set != FALSE;
@@ -10012,7 +9936,7 @@ clutter_actor_move_by (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
   x = info->fixed_pos.x;
   y = info->fixed_pos.y;
 
@@ -10983,7 +10907,7 @@ clutter_actor_get_x (ClutterActor *self)
         {
           const ClutterLayoutInfo *info;
 
-          info = _clutter_actor_get_layout_info_or_defaults (self);
+          info = _clutter_actor_peek_layout_info (self);
 
           return info->fixed_pos.x;
         }
@@ -11031,7 +10955,7 @@ clutter_actor_get_y (ClutterActor *self)
         {
           const ClutterLayoutInfo *info;
 
-          info = _clutter_actor_get_layout_info_or_defaults (self);
+          info = _clutter_actor_peek_layout_info (self);
 
           return info->fixed_pos.y;
         }
@@ -11193,7 +11117,7 @@ clutter_actor_get_scale (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (scale_x)
     *scale_x = info->scale_x;
@@ -11218,7 +11142,7 @@ clutter_actor_get_scale_z (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 1.0);
 
-  return _clutter_actor_get_transform_info_or_defaults (self)->scale_z;
+  return _clutter_actor_peek_transform_info (self)->scale_z;
 }
 
 /**
@@ -11247,7 +11171,7 @@ clutter_actor_get_scale_center (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   clutter_anchor_coord_get_units (self, &info->scale_center,
                                   center_x,
@@ -11276,7 +11200,7 @@ clutter_actor_get_scale_gravity (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_GRAVITY_NONE);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   return clutter_anchor_coord_get_gravity (&info->scale_center);
 }
@@ -11647,7 +11571,7 @@ clutter_actor_set_z_position (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   _clutter_actor_create_transition (self, obj_props[PROP_Z_POSITION],
                                     info->z_position,
@@ -11669,7 +11593,7 @@ clutter_actor_get_z_position (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return _clutter_actor_get_transform_info_or_defaults (self)->z_position;
+  return _clutter_actor_peek_transform_info (self)->z_position;
 }
 
 /**
@@ -11697,7 +11621,7 @@ clutter_actor_set_pivot_point (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_PIVOT_POINT],
                                     &info->pivot,
                                     &pivot);
@@ -11724,7 +11648,7 @@ clutter_actor_get_pivot_point (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (pivot_x != NULL)
     *pivot_x = info->pivot.x;
@@ -11753,7 +11677,7 @@ clutter_actor_set_pivot_point_z (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_PIVOT_POINT_Z],
                                     info->pivot_z,
                                     pivot_z);
@@ -11772,7 +11696,7 @@ clutter_actor_get_pivot_point_z (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return _clutter_actor_get_transform_info_or_defaults (self)->pivot_z;
+  return _clutter_actor_peek_transform_info (self)->pivot_z;
 }
 
 /**
@@ -11795,7 +11719,7 @@ clutter_actor_set_depth (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_DEPTH],
                                     info->z_position,
                                     depth);
@@ -11816,7 +11740,7 @@ clutter_actor_get_depth (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.0);
 
-  return _clutter_actor_get_transform_info_or_defaults (self)->z_position;
+  return _clutter_actor_peek_transform_info (self)->z_position;
 }
 
 /**
@@ -11948,7 +11872,7 @@ clutter_actor_get_rotation (ClutterActor      *self,
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   switch (axis)
     {
@@ -12000,7 +11924,7 @@ clutter_actor_get_z_rotation_gravity (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.0);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   return clutter_anchor_coord_get_gravity (&info->rz_center);
 }
@@ -12196,7 +12120,7 @@ insert_child_at_depth (ClutterActor *self,
   child->priv->parent = self;
 
   child_depth =
-    _clutter_actor_get_transform_info_or_defaults (child)->z_position;
+    _clutter_actor_peek_transform_info (child)->z_position;
 
   /* special-case the first child */
   if (self->priv->n_children == 0)
@@ -12220,7 +12144,7 @@ insert_child_at_depth (ClutterActor *self,
       float iter_depth;
 
       iter_depth =
-        _clutter_actor_get_transform_info_or_defaults (iter)->z_position;
+        _clutter_actor_peek_transform_info (iter)->z_position;
 
       if (iter_depth > child_depth)
         break;
@@ -13624,7 +13548,7 @@ clutter_actor_get_anchor_point (ClutterActor *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
   clutter_anchor_coord_get_units (self, &info->anchor,
                                   anchor_x,
                                   anchor_y,
@@ -13717,7 +13641,7 @@ clutter_actor_get_anchor_point_gravity (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_GRAVITY_NONE);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   return clutter_anchor_coord_get_gravity (&info->anchor);
 }
@@ -14928,7 +14852,7 @@ clutter_actor_is_rotated (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (info->rx_angle || info->ry_angle || info->rz_angle)
     return TRUE;
@@ -14953,7 +14877,7 @@ clutter_actor_is_scaled (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (info->scale_x != 1.0 || info->scale_y != 1.0)
     return TRUE;
@@ -15138,7 +15062,7 @@ clutter_actor_allocate_preferred_size (ClutterActor           *self,
 
   if (priv->position_set)
     {
-      info = _clutter_actor_get_layout_info_or_defaults (self);
+      info = _clutter_actor_peek_layout_info (self);
       actor_x = info->fixed_pos.x;
       actor_y = info->fixed_pos.y;
     }
@@ -15863,7 +15787,7 @@ clutter_actor_set_transform (ClutterActor        *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (transform != NULL)
     clutter_matrix_init_from_matrix (&new_transform, transform);
@@ -17562,100 +17486,6 @@ clutter_actor_get_layout_manager (ClutterActor *self)
   return self->priv->layout_manager;
 }
 
-static const ClutterLayoutInfo default_layout_info = {
-  CLUTTER_POINT_INIT_ZERO,      /* fixed-pos */
-  { 0, 0, 0, 0 },               /* margin */
-  CLUTTER_ACTOR_ALIGN_FILL,     /* x-align */
-  CLUTTER_ACTOR_ALIGN_FILL,     /* y-align */
-  FALSE, FALSE,                 /* expand */
-  CLUTTER_SIZE_INIT_ZERO,       /* minimum */
-  CLUTTER_SIZE_INIT_ZERO,       /* natural */
-};
-
-static void
-layout_info_free (gpointer data)
-{
-  if (G_LIKELY (data != NULL))
-    g_slice_free (ClutterLayoutInfo, data);
-}
-
-/*< private >
- * _clutter_actor_peek_layout_info:
- * @self: a #ClutterActor
- *
- * Retrieves a pointer to the ClutterLayoutInfo structure.
- *
- * If the actor does not have a ClutterLayoutInfo associated to it, %NULL is returned.
- *
- * Return value: (transfer none): a pointer to the ClutterLayoutInfo structure
- */
-ClutterLayoutInfo *
-_clutter_actor_peek_layout_info (ClutterActor *self)
-{
-  return g_object_get_qdata (G_OBJECT (self), quark_actor_layout_info);
-}
-
-/*< private >
- * _clutter_actor_get_layout_info:
- * @self: a #ClutterActor
- *
- * Retrieves a pointer to the ClutterLayoutInfo structure.
- *
- * If the actor does not have a ClutterLayoutInfo associated to it, one
- * will be created and initialized to the default values.
- *
- * This function should be used for setters.
- *
- * For getters, you should use _clutter_actor_get_layout_info_or_defaults()
- * instead.
- *
- * Return value: (transfer none): a pointer to the ClutterLayoutInfo structure
- */
-ClutterLayoutInfo *
-_clutter_actor_get_layout_info (ClutterActor *self)
-{
-  ClutterLayoutInfo *retval;
-
-  retval = _clutter_actor_peek_layout_info (self);
-  if (retval == NULL)
-    {
-      retval = g_slice_new (ClutterLayoutInfo);
-
-      *retval = default_layout_info;
-
-      g_object_set_qdata_full (G_OBJECT (self), quark_actor_layout_info,
-                               retval,
-                               layout_info_free);
-    }
-
-  return retval;
-}
-
-/*< private >
- * _clutter_actor_get_layout_info_or_defaults:
- * @self: a #ClutterActor
- *
- * Retrieves the ClutterLayoutInfo structure associated to an actor.
- *
- * If the actor does not have a ClutterLayoutInfo structure associated to it,
- * then the default structure will be returned.
- *
- * This function should only be used for getters.
- *
- * Return value: a const pointer to the ClutterLayoutInfo structure
- */
-const ClutterLayoutInfo *
-_clutter_actor_get_layout_info_or_defaults (ClutterActor *self)
-{
-  const ClutterLayoutInfo *info;
-
-  info = _clutter_actor_peek_layout_info (self);
-  if (info == NULL)
-    return &default_layout_info;
-
-  return info;
-}
-
 /**
  * clutter_actor_set_x_align:
  * @self: a #ClutterActor
@@ -17704,7 +17534,7 @@ clutter_actor_get_x_align (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_ACTOR_ALIGN_FILL);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->x_align;
+  return _clutter_actor_peek_layout_info (self)->x_align;
 }
 
 /**
@@ -17755,7 +17585,7 @@ clutter_actor_get_y_align (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_ACTOR_ALIGN_FILL);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->y_align;
+  return _clutter_actor_peek_layout_info (self)->y_align;
 }
 
 static inline void
@@ -17831,7 +17661,7 @@ clutter_actor_get_margin (ClutterActor  *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin != NULL);
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
 
   *margin = info->margin;
 }
@@ -17856,7 +17686,7 @@ clutter_actor_set_margin_top (ClutterActor *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_MARGIN_TOP],
                                     info->margin.top,
                                     margin);
@@ -17877,7 +17707,7 @@ clutter_actor_get_margin_top (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->margin.top;
+  return _clutter_actor_peek_layout_info (self)->margin.top;
 }
 
 /**
@@ -17900,7 +17730,7 @@ clutter_actor_set_margin_bottom (ClutterActor *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_MARGIN_BOTTOM],
                                     info->margin.bottom,
                                     margin);
@@ -17921,7 +17751,7 @@ clutter_actor_get_margin_bottom (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->margin.bottom;
+  return _clutter_actor_peek_layout_info (self)->margin.bottom;
 }
 
 /**
@@ -17944,7 +17774,7 @@ clutter_actor_set_margin_left (ClutterActor *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_MARGIN_LEFT],
                                     info->margin.left,
                                     margin);
@@ -17965,7 +17795,7 @@ clutter_actor_get_margin_left (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->margin.left;
+  return _clutter_actor_peek_layout_info (self)->margin.left;
 }
 
 /**
@@ -17988,7 +17818,7 @@ clutter_actor_set_margin_right (ClutterActor *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (margin >= 0.f);
 
-  info = _clutter_actor_get_layout_info_or_defaults (self);
+  info = _clutter_actor_peek_layout_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_MARGIN_RIGHT],
                                     info->margin.right,
                                     margin);
@@ -18009,7 +17839,7 @@ clutter_actor_get_margin_right (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0.f);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->margin.right;
+  return _clutter_actor_peek_layout_info (self)->margin.right;
 }
 
 static inline void
@@ -18428,71 +18258,13 @@ clutter_actor_iter_destroy (ClutterActorIter *iter)
     }
 }
 
-static const ClutterAnimationInfo default_animation_info = {
-  NULL,         /* transitions */
-  NULL,         /* states */
-  NULL,         /* cur_state */
-};
-
-static void
-clutter_animation_info_free (gpointer data)
-{
-  if (data != NULL)
-    {
-      ClutterAnimationInfo *info = data;
-
-      if (info->transitions != NULL)
-        g_hash_table_unref (info->transitions);
-
-      if (info->states != NULL)
-        g_array_unref (info->states);
-
-      g_slice_free (ClutterAnimationInfo, info);
-    }
-}
-
-const ClutterAnimationInfo *
-_clutter_actor_get_animation_info_or_defaults (ClutterActor *self)
-{
-  const ClutterAnimationInfo *res;
-  GObject *obj = G_OBJECT (self);
-
-  res = g_object_get_qdata (obj, quark_actor_animation_info);
-  if (res != NULL)
-    return res;
-
-  return &default_animation_info;
-}
-
-ClutterAnimationInfo *
-_clutter_actor_get_animation_info (ClutterActor *self)
-{
-  GObject *obj = G_OBJECT (self);
-  ClutterAnimationInfo *res;
-
-  res = g_object_get_qdata (obj, quark_actor_animation_info);
-  if (res == NULL)
-    {
-      res = g_slice_new (ClutterAnimationInfo);
-
-      *res = default_animation_info;
-
-      g_object_set_qdata_full (obj, quark_actor_animation_info,
-                               res,
-                               clutter_animation_info_free);
-    }
-
-  return res;
-}
-
 ClutterTransition *
 _clutter_actor_get_transition (ClutterActor *actor,
                                GParamSpec   *pspec)
 {
   const ClutterAnimationInfo *info;
 
-  info = _clutter_actor_get_animation_info_or_defaults (actor);
-
+  info = _clutter_actor_peek_animation_info (actor);
   if (info->transitions == NULL)
     return NULL;
 
@@ -18881,8 +18653,7 @@ clutter_actor_remove_transition (ClutterActor *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (name != NULL);
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
-
+  info = _clutter_actor_peek_animation_info (self);
   if (info->transitions == NULL)
     return;
 
@@ -18935,7 +18706,7 @@ clutter_actor_remove_all_transitions (ClutterActor *self)
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
+  info = _clutter_actor_peek_animation_info (self);
   if (info->transitions == NULL)
     return;
 
@@ -18991,12 +18762,11 @@ clutter_actor_get_easing_duration (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0);
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
+  info = _clutter_actor_peek_animation_info (self);
+  if (info->cur_state == NULL)
+    return 0;
 
-  if (info->cur_state != NULL)
-    return info->cur_state->easing_duration;
-
-  return 0;
+  return info->cur_state->easing_duration;
 }
 
 /**
@@ -19050,12 +18820,11 @@ clutter_actor_get_easing_mode (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), CLUTTER_EASE_OUT_CUBIC);
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
+  info = _clutter_actor_peek_animation_info (self);
+  if (info->cur_state == NULL)
+    return CLUTTER_EASE_OUT_CUBIC;
 
-  if (info->cur_state != NULL)
-    return info->cur_state->easing_mode;
-
-  return CLUTTER_EASE_OUT_CUBIC;
+  return info->cur_state->easing_mode;
 }
 
 /**
@@ -19107,12 +18876,11 @@ clutter_actor_get_easing_delay (ClutterActor *self)
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0);
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
+  info = _clutter_actor_peek_animation_info (self);
+  if (info->cur_state == NULL)
+    return 0;
 
-  if (info->cur_state != NULL)
-    return info->cur_state->easing_delay;
-
-  return 0;
+  return info->cur_state->easing_delay;
 }
 
 /**
@@ -19153,13 +18921,13 @@ ClutterTransition *
 clutter_actor_get_transition (ClutterActor *self,
                               const char   *name)
 {
-  TransitionClosure *clos;
   const ClutterAnimationInfo *info;
+  TransitionClosure *clos;
 
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), NULL);
   g_return_val_if_fail (name != NULL, NULL);
 
-  info = _clutter_actor_get_animation_info_or_defaults (self);
+  info = _clutter_actor_peek_animation_info (self);
   if (info->transitions == NULL)
     return NULL;
 
@@ -19745,7 +19513,7 @@ clutter_actor_get_x_expand (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->x_expand;
+  return _clutter_actor_peek_layout_info (self)->x_expand;
 }
 
 /**
@@ -19804,7 +19572,7 @@ clutter_actor_get_y_expand (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), FALSE);
 
-  return _clutter_actor_get_layout_info_or_defaults (self)->y_expand;
+  return _clutter_actor_peek_layout_info (self)->y_expand;
 }
 
 static void
@@ -19844,7 +19612,7 @@ clutter_actor_compute_expand (ClutterActor *self)
       const ClutterLayoutInfo *info;
       gboolean x_expand, y_expand;
 
-      info = _clutter_actor_get_layout_info_or_defaults (self);
+      info = _clutter_actor_peek_layout_info (self);
 
       if (self->priv->x_expand_set)
         x_expand = info->x_expand;
@@ -20074,7 +19842,7 @@ clutter_actor_set_child_transform (ClutterActor        *self,
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (transform != NULL)
     clutter_matrix_init_from_matrix (&new_transform, transform);
@@ -20106,7 +19874,7 @@ clutter_actor_get_child_transform (ClutterActor  *self,
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (transform != NULL);
 
-  info = _clutter_actor_get_transform_info_or_defaults (self);
+  info = _clutter_actor_peek_transform_info (self);
 
   if (info->child_transform_set)
     clutter_matrix_init_from_matrix (transform, &info->child_transform);

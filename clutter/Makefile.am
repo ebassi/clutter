@@ -134,6 +134,7 @@ source_c = \
 	$(srcdir)/clutter-action.c		\
 	$(srcdir)/clutter-actor-box.c		\
 	$(srcdir)/clutter-actor-meta.c		\
+	$(srcdir)/clutter-actor-state.c		\
 	$(srcdir)/clutter-actor.c		\
 	$(srcdir)/clutter-align-constraint.c	\
 	$(srcdir)/clutter-animatable.c		\
