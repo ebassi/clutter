@@ -174,6 +174,10 @@ struct _ClutterLayoutInfo
 
   ClutterMargin margin;
 
+  ClutterPoint position;
+
+  ClutterRect bounds;
+
   guint x_align : 4;
   guint y_align : 4;
 

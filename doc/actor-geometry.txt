@@ -1,0 +1,133 @@
+== Geometry of an actor ==
+
+  * position (Point): the origin of the actor, in the parent's coordinate
+    space.
+
+  * z-position (float): the origin of the actor on the Z axis; changing the
+    z-position does not influence the layout or paint order.
+
+  * bounds (Rect): the bounding rectangle that defines the usable space of
+    the actor; the origin is in :position with an offset of :margin.top and
+    :margin.left.
+
+  * frame (Rect): the bounding rectangle that defines the actor; the origin
+    is in :position, the size is the size of the :bounds rectangle, plus
+    the margin right and bottom. The :frame is never stored, but it is always
+    recomputed from :position, :bounds, and :margin.
+
+  * margin (Margin): the empty space between the :frame and the :bounds of
+    an actor.
+
+  * pivot-point (Point): the center of transformations, in normalized
+    coordinates, with (0, 0) being the top left corner of the actor, 
+    and (1, 1) being its bottom right corner.
+
+  * pivot-point-z (float): the transformation coordinate for the XZ and
+    YZ planes, in parent-relative coordinate space.
+
+{{{ #fig.1: geometry of an actor
+ +========|===============================+
+ |                                        |
+ |                                        |
+ -        A----------B----------+         |
+ |        |xxxxxxxxxxxxxxxxxxxxx|         |
+ |        |xxD***************xxx|         |
+ |        |xx****************xxx|         |
+ |        |xx****************xxx|         |
+ |        |xx****************xxx|         |
+ |        |xx********P******FxxxC         |
+ |        |xx****************xxx|         |
+ |        |xx****************xxx|         |
+ |        |xx****************xxx|         |    Legend:
+ |        |xx********E*******xxx|         |    A) position, frame.origin  D) bounds.origin
+ |        |xxxxxxxxxxxxxxxxxxxxx|         |    B) frame.size.width        E) bounds.size.width
+ |        +---------------------+         -    C) frame.size.height       F) bounds.size.height
+ |                                        |    P) pivot-point             x) margin
+ |                                        |    *) bounds
+ +==============================|=========+
+}}}
+
+In the figure 1 above, the :position and the origin for :frame, is located at
+(x:90, y:30) in parent-relative coordinates; the frame size is (w:200, h:180).
+The :bounds rectangle is (x:0, y:0, w:150, h:160), with margins set to top:10,
+right:30, bottom:10, and left:20. The pivot-point is set at (0.5, 0.5). Thus:
+
+  :position (x:90, y:30)
+  :margin (t:10, r:30, b:10, l:20)
+  :bounds (x:0, y:0, w:150, h:160)
+  :frame (x:90, y:30, w:200, h:180)
+  :pivot-point (x:100, y:90)
+
+=== Expansion and alignment flags ===
+
+If the :x-expand and :y-expand flags of an actor are set, the :x-align and
+:y-align flags control the :position of the actor with regards to its parent,
+if the frame assigned to the actor was larger than the actor's preferred size.
+
+The :x-expand and :y-expand flags are recursively applied to an actor's
+parent, so that an actor requesting to expand will cause its parent to also
+request to expand - unless the parent is the Stage.
+
+Layout managers should not assign a frame larger than the one preferred by
+the actor, unless the actor needs to expand.
+
+=== Requisition modes ===
+
+The :request-mode of an actor controls the way a layout manager should ask
+for preferred size of an actor.
+
+The CLUTTER_REQUEST_HEIGHT_FOR_WIDTH and CLUTTER_REQUEST_WIDTH_FOR_HEIGHT
+modes control the order with which the preferred size should be queried,
+either height after width, or width after height, respectively. The sizes
+returned by the actor will be cached until the actor's layout is
+invalidated.
+
+The CLUTTER_REQUEST_FIXED_SIZE is used by actors that do not have special
+geometry requests, and will return the same minimum and natural sizes for
+every query. The sizes returned by the actor will be cached until the
+actor's layout is invalidated.
+
+The CLUTTER_REQUEST_PARENT_WIDTH, CLUTTER_REQUEST_PARENT_HEIGHT, and
+CLUTTER_REQUEST_PARENT_SIZE will return the size requested by the parent
+without asking the actor's implementation, if any. The sizes returned by
+the actor will be cached until the parent is changed, or the layout of the
+parent is invalidated.
+
+== Transformations ==
+
+Each actor's modelview is set up initially to have an origin in :position.
+
+The following translations are applied after the actor's modelview has
+been set up:
+
+  * z-position (float): a translation on the Z axis
+
+  * translation (Vertex): translation factors centered in :pivot-point,
+    imposed on the :position.
+
+  * scale (float, float): scaling factors, centered in :pivot-point.
+
+  * scale-z (float): scaling factor on the Z axis.
+
+  * rotation-z (angle): rotation angle on the XY plane, centered in
+    :pivot-point.
+
+  * rotation-y (angle): rotation angle on the XZ plane, centered in
+    :pivot-point and :pivot-point-z
+
+  * rotation-x (angle): rotation angle on the YZ plane, centered in
+    :pivot-point and :pivot-point-z
+
+Additionally, there are the following transformations:
+
+  * transform (matrix): a full modelview matrix, centered in :pivot-point
+    and :pivot-point-z, applied after the modelview is set up but before
+    the remaining transformations.
+
+  * child-transform (matrix): a full modelview matrix, applied to the
+    children of the actor (if any), after their own modelview is set
+    up but before the remaining transformations.
+
+== Layout ==
+
+FIXME

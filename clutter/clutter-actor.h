@@ -374,6 +374,18 @@ void                            clutter_actor_get_allocation_vertices           
                                                                                  ClutterActor                *ancestor,
                                                                                  ClutterVertex                verts[]);
 gboolean                        clutter_actor_has_allocation                    (ClutterActor                *self);
+CLUTTER_AVAILABLE_IN_1_14
+void                            clutter_actor_set_bounds                        (ClutterActor                *self,
+                                                                                 const ClutterRect           *bounds);
+CLUTTER_AVAILABLE_IN_1_14
+void                            clutter_actor_get_bounds                        (ClutterActor                *self,
+                                                                                 ClutterRect                 *bounds);
+CLUTTER_AVAILABLE_IN_1_14
+void                            clutter_actor_set_frame                         (ClutterActor                *self,
+                                                                                 const ClutterRect           *frame);
+CLUTTER_AVAILABLE_IN_1_14
+void                            clutter_actor_get_frame                         (ClutterActor                *self,
+                                                                                 ClutterRect                 *frame);
 void                            clutter_actor_set_size                          (ClutterActor                *self,
                                                                                  gfloat                       width,
                                                                                  gfloat                       height);

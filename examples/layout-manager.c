@@ -48,6 +48,7 @@ multi_layout_get_preferred_width (ClutterLayoutManager *manager,
                                   float                *nat_width_p)
 {
   MultiLayout *self = (MultiLayout *) manager;
+  ClutterActor *actor = CLUTTER_ACTOR (container);
   float minimum, natural;
   float max_natural_width;
   ClutterActorIter iter;
@@ -58,7 +59,7 @@ multi_layout_get_preferred_width (ClutterLayoutManager *manager,
   max_natural_width = 0.f;
   n_children = 0;
 
-  clutter_actor_iter_init (&iter, CLUTTER_ACTOR (container));
+  clutter_actor_iter_init (&iter, actor);
   while (clutter_actor_iter_next (&iter, &child))
     {
       float child_minimum, child_natural;
@@ -106,6 +107,7 @@ multi_layout_get_preferred_height (ClutterLayoutManager *manager,
                                    float                *nat_height_p)
 {
   MultiLayout *self = (MultiLayout *) manager;
+  ClutterActor *actor = CLUTTER_ACTOR (container);
   float minimum, natural;
   ClutterActorIter iter;
   ClutterActor *child;
@@ -114,7 +116,7 @@ multi_layout_get_preferred_height (ClutterLayoutManager *manager,
   minimum = natural = self->spacing * 2.f;
   n_children = 0;
 
-  clutter_actor_iter_init (&iter, CLUTTER_ACTOR (container));
+  clutter_actor_iter_init (&iter, actor);
   while (clutter_actor_iter_next (&iter, &child))
     {
       float child_minimum, child_natural;
@@ -179,31 +181,34 @@ get_visible_children (ClutterActor *actor)
 }
 
 static void
-multi_layout_allocate (ClutterLayoutManager   *manager,
-                       ClutterContainer       *container,
-                       const ClutterActorBox  *allocation,
-                       ClutterAllocationFlags  flags)
+multi_layout_layout_actor_children (ClutterLayoutManager *manager,
+                                    ClutterActor         *actor)
 {
   MultiLayout *self = (MultiLayout *) manager;
   float avail_width, avail_height;
-  float x_offset, y_offset;
+  float x_offset = 0.f, y_offset = 0.f;
   ClutterActorIter iter;
   ClutterActor *child;
+  ClutterActorBox allocation;
+  ClutterRect bounds;
   float item_x = 0.f, item_y = 0.f;
   int n_items, n_items_per_row = 0, item_index;
   ClutterPoint center = CLUTTER_POINT_INIT_ZERO;
   double radius = 0, theta = 0;
 
-  n_items = get_visible_children (CLUTTER_ACTOR (container));
+  n_items = get_visible_children (actor);
   if (n_items == 0)
     return;
 
-  clutter_actor_box_get_origin (allocation, &x_offset, &y_offset);
-  clutter_actor_box_get_size (allocation, &avail_width, &avail_height);
+  clutter_actor_get_bounds (actor, &bounds);
+  avail_width = clutter_rect_get_width (&bounds);
+  avail_height = clutter_rect_get_height (&bounds);
 
   /* ensure we have an updated value of cell_width and cell_height */
-  multi_layout_get_preferred_width (manager, container, avail_width, NULL, NULL);
-  multi_layout_get_preferred_height (manager, container, avail_height, NULL, NULL);
+  multi_layout_get_preferred_width (manager, CLUTTER_CONTAINER (actor),
+                                    avail_width, NULL, NULL);
+  multi_layout_get_preferred_height (manager, CLUTTER_CONTAINER (actor),
+                                     avail_height, NULL, NULL);
 
   item_index = 0;
 
@@ -215,16 +220,16 @@ multi_layout_allocate (ClutterLayoutManager   *manager,
     }
   else if (self->state == MULTI_LAYOUT_CIRCLE)
     {
-      center.x = allocation->x2 / 2.f;
-      center.y = allocation->y2 / 2.f;
+      center.x = avail_width / 2.f;
+      center.y = avail_height / 2.f;
       radius = MIN ((avail_width - self->cell_width) / 2.0,
                     (avail_height - self->cell_height) / 2.0);
     }
 
-  clutter_actor_iter_init (&iter, CLUTTER_ACTOR (container));
+  clutter_actor_iter_init (&iter, actor);
   while (clutter_actor_iter_next (&iter, &child))
     {
-      ClutterActorBox child_allocation = CLUTTER_ACTOR_BOX_INIT (0, 0, 0, 0);
+      ClutterRect frame;
 
       if (!CLUTTER_ACTOR_IS_VISIBLE (child))
         continue;
@@ -238,23 +243,23 @@ multi_layout_allocate (ClutterLayoutManager   *manager,
               item_y += self->cell_height + self->spacing;
             }
 
-          child_allocation.x1 = item_x;
-          child_allocation.y1 = item_y;
-          child_allocation.x2 = child_allocation.x1 + self->cell_width;
-          child_allocation.y2 = child_allocation.y1 + self->cell_height;
+          frame.origin.x = item_x;
+          frame.origin.y = item_y;
 
           item_x += self->cell_width + self->spacing;
         }
       else if (self->state == MULTI_LAYOUT_CIRCLE)
         {
           theta = 2.0 * G_PI / n_items * item_index;
-          child_allocation.x1 = center.x + radius * sinf (theta) - (self->cell_width / 2.f);
-          child_allocation.y1 = center.y + radius * -cosf (theta) - (self->cell_height / 2.f);
-          child_allocation.x2 = child_allocation.x1 + self->cell_width;
-          child_allocation.y2 = child_allocation.y1 + self->cell_height;
+
+          frame.origin.x = center.x + radius * sinf (theta) - (self->cell_width / 2.f);
+          frame.origin.y = center.y + radius * -cosf (theta) - (self->cell_height / 2.f);
         }
 
-      clutter_actor_allocate (child, &child_allocation, flags);
+      frame.size.width = self->cell_width;
+      frame.size.height = self->cell_height;
+
+      clutter_actor_set_frame (child, &frame);
 
       item_index += 1;
     }
@@ -267,7 +272,7 @@ multi_layout_class_init (MultiLayoutClass *klass)
 
   manager_class->get_preferred_width = multi_layout_get_preferred_width;
   manager_class->get_preferred_height = multi_layout_get_preferred_height;
-  manager_class->allocate = multi_layout_allocate;
+  manager_class->layout_actor_children = multi_layout_layout_actor_children;
 }
 
 static void
@@ -318,9 +323,7 @@ static gboolean
 on_enter (ClutterActor *rect,
           ClutterEvent *event)
 {
-  clutter_actor_save_easing_state (rect);
   clutter_actor_set_scale (rect, 1.2, 1.2);
-  clutter_actor_restore_easing_state (rect);
 
   return CLUTTER_EVENT_STOP;
 }
@@ -329,9 +332,7 @@ static gboolean
 on_leave (ClutterActor *rect,
           ClutterEvent *event)
 {
-  clutter_actor_save_easing_state (rect);
   clutter_actor_set_scale (rect, 1.0, 1.0);
-  clutter_actor_restore_easing_state (rect);
 
   return CLUTTER_EVENT_STOP;
 }

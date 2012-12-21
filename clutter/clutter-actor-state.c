@@ -36,6 +36,10 @@ static const ClutterLayoutInfo default_layout_info = {
 
   { 0.f, 0.f, 0.f, 0.f },       /* margin */
 
+  CLUTTER_POINT_INIT_ZERO,      /* position */
+
+  CLUTTER_RECT_INIT_ZERO,       /* bounds */
+
   CLUTTER_ACTOR_ALIGN_FILL,     /* x-align */
   CLUTTER_ACTOR_ALIGN_FILL,     /* y-align */
   
