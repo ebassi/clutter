@@ -654,6 +654,7 @@ typedef enum {
 
 struct _ClutterActorPrivate
 {
+  /* the modifiable actor state */
   ClutterActorState *state;
 
   /* request mode */
@@ -673,13 +674,9 @@ struct _ClutterActorPrivate
   ClutterActorBox allocation;
   ClutterAllocationFlags allocation_flags;
 
-  /* clip, in actor coordinates */
-  ClutterRect clip;
-
-  /* the cached transformation matrix; see apply_transform() */
+  /* the cached modelview; see apply_transform() */
   CoglMatrix transform;
 
-  guint8 opacity;
   gint opacity_override;
 
   ClutterOffscreenRedirect offscreen_redirect;
@@ -766,14 +763,12 @@ struct _ClutterActorPrivate
 
   ClutterStageQueueRedrawEntry *queue_redraw_entry;
 
-  ClutterColor bg_color;
-
 #ifdef CLUTTER_ENABLE_DEBUG
   /* a string used for debugging messages */
   gchar *debug_name;
 #endif
 
-  /* bitfields */
+  /* bitfields - keep at the end of the struct */
 
   /* fixed position and sizes */
   guint position_set                : 1;
@@ -3541,12 +3536,15 @@ clutter_actor_paint_node (ClutterActor     *actor,
                           ClutterPaintNode *root)
 {
   ClutterActorPrivate *priv = actor->priv;
+  const ClutterPaintInfo *info;
 
   if (root == NULL)
     return FALSE;
 
+  info = _clutter_actor_peek_paint_info (actor);
+
   if (priv->bg_color_set &&
-      !clutter_color_equal (&priv->bg_color, CLUTTER_COLOR_Transparent))
+      !clutter_color_equal (&info->bg_color, CLUTTER_COLOR_Transparent))
     {
       ClutterPaintNode *node;
       ClutterColor bg_color;
@@ -3557,9 +3555,9 @@ clutter_actor_paint_node (ClutterActor     *actor,
       box.x2 = clutter_actor_box_get_width (&priv->allocation);
       box.y2 = clutter_actor_box_get_height (&priv->allocation);
 
-      bg_color = priv->bg_color;
+      bg_color = info->bg_color;
       bg_color.alpha = clutter_actor_get_paint_opacity_internal (actor)
-                     * priv->bg_color.alpha
+                     * info->bg_color.alpha
                      / 255;
 
       node = clutter_color_node_new (&bg_color);
@@ -3616,6 +3614,7 @@ clutter_actor_paint (ClutterActor *self)
   ClutterPickMode pick_mode;
   gboolean clip_set = FALSE;
   gboolean shader_applied = FALSE;
+  const ClutterPaintInfo *info;
 
   CLUTTER_STATIC_COUNTER (actor_paint_counter,
                           "Actor real-paint counter",
@@ -3639,6 +3638,8 @@ clutter_actor_paint (ClutterActor *self)
   if (pick_mode == CLUTTER_PICK_NONE)
     priv->propagated_one_redraw = FALSE;
 
+  info = _clutter_actor_peek_paint_info (self);
+
   /* It's an important optimization that we consider painting of
    * actors with 0 opacity to be a NOP... */
   if (pick_mode == CLUTTER_PICK_NONE &&
@@ -3646,7 +3647,7 @@ clutter_actor_paint (ClutterActor *self)
       !CLUTTER_ACTOR_IS_TOPLEVEL (self) &&
       /* Use the override opacity if its been set */
       ((priv->opacity_override >= 0) ?
-       priv->opacity_override : priv->opacity) == 0)
+       priv->opacity_override : info->opacity) == 0)
     return;
 
   /* if we aren't paintable (not in a toplevel with all
@@ -3713,10 +3714,10 @@ clutter_actor_paint (ClutterActor *self)
 
   if (priv->has_clip)
     {
-      cogl_clip_push_rectangle (priv->clip.origin.x,
-                                priv->clip.origin.y,
-                                priv->clip.origin.x + priv->clip.size.width,
-                                priv->clip.origin.y + priv->clip.size.height);
+      cogl_clip_push_rectangle (info->clip.origin.x,
+                                info->clip.origin.y,
+                                info->clip.origin.x + info->clip.size.width,
+                                info->clip.origin.y + info->clip.size.height);
       clip_set = TRUE;
     }
   else if (priv->clip_to_allocation)
@@ -4715,7 +4716,11 @@ clutter_actor_set_clip_rect (ClutterActor      *self,
 
   if (clip != NULL)
     {
-      priv->clip = *clip;
+      ClutterPaintInfo *info;
+
+      info = _clutter_actor_get_paint_info (self);
+      info->clip = *clip;
+
       priv->has_clip = TRUE;
     }
   else
@@ -5232,7 +5237,12 @@ clutter_actor_get_property (GObject    *object,
       break;
 
     case PROP_OPACITY:
-      g_value_set_uint (value, priv->opacity);
+      {
+        const ClutterPaintInfo *info;
+
+        info = _clutter_actor_peek_paint_info (actor);
+        g_value_set_uint (value, info->opacity);
+      }
       break;
 
     case PROP_OFFSCREEN_REDIRECT:
@@ -5261,19 +5271,27 @@ clutter_actor_get_property (GObject    *object,
 
     case PROP_CLIP: /* XXX:2.0 - remove */
       {
+        const ClutterPaintInfo *info;
         ClutterGeometry clip;
 
-        clip.x      = CLUTTER_NEARBYINT (priv->clip.origin.x);
-        clip.y      = CLUTTER_NEARBYINT (priv->clip.origin.y);
-        clip.width  = CLUTTER_NEARBYINT (priv->clip.size.width);
-        clip.height = CLUTTER_NEARBYINT (priv->clip.size.height);
+        info = _clutter_actor_peek_paint_info (actor);
+
+        clip.x      = CLUTTER_NEARBYINT (info->clip.origin.x);
+        clip.y      = CLUTTER_NEARBYINT (info->clip.origin.y);
+        clip.width  = CLUTTER_NEARBYINT (info->clip.size.width);
+        clip.height = CLUTTER_NEARBYINT (info->clip.size.height);
 
         g_value_set_boxed (value, &clip);
       }
       break;
 
     case PROP_CLIP_RECT:
-      g_value_set_boxed (value, &priv->clip);
+      {
+        const ClutterPaintInfo *info;
+
+        info = _clutter_actor_peek_paint_info (actor);
+        g_value_set_boxed (value, &info->clip);
+      }
       break;
 
     case PROP_CLIP_TO_ALLOCATION:
@@ -5611,7 +5629,12 @@ clutter_actor_get_property (GObject    *object,
       break;
 
     case PROP_BACKGROUND_COLOR:
-      g_value_set_boxed (value, &priv->bg_color);
+      {
+        const ClutterPaintInfo *info;
+
+        info = _clutter_actor_peek_paint_info (actor);
+        g_value_set_boxed (value, &info->bg_color);
+      }
       break;
 
     case PROP_FIRST_CHILD:
@@ -5822,21 +5845,24 @@ clutter_actor_update_default_paint_volume (ClutterActor       *self,
     }
   else
     {
+      const ClutterPaintInfo *info;
       ClutterActor *child;
 
+      info = _clutter_actor_peek_paint_info (self);
+
       if (priv->has_clip &&
-          priv->clip.size.width >= 0 &&
-          priv->clip.size.height >= 0)
+          info->clip.size.width >= 0 &&
+          info->clip.size.height >= 0)
         {
           ClutterVertex origin;
 
-          origin.x = priv->clip.origin.x;
-          origin.y = priv->clip.origin.y;
+          origin.x = info->clip.origin.x;
+          origin.y = info->clip.origin.y;
           origin.z = 0;
 
           clutter_paint_volume_set_origin (volume, &origin);
-          clutter_paint_volume_set_width (volume, priv->clip.size.width);
-          clutter_paint_volume_set_height (volume, priv->clip.size.height);
+          clutter_paint_volume_set_width (volume, info->clip.size.width);
+          clutter_paint_volume_set_height (volume, info->clip.size.height);
 
           res = TRUE;
         }
@@ -8228,7 +8254,6 @@ clutter_actor_init (ClutterActor *self)
   priv->id = _clutter_context_acquire_id (self);
   priv->pick_id = -1;
 
-  priv->opacity = 0xff;
   priv->show_on_set_parent = TRUE;
 
   priv->needs_width_request = TRUE;
@@ -11210,10 +11235,13 @@ clutter_actor_set_opacity_internal (ClutterActor *self,
                                     guint8        opacity)
 {
   ClutterActorPrivate *priv = self->priv;
+  ClutterPaintInfo *info;
 
-  if (priv->opacity != opacity)
+  info = _clutter_actor_get_paint_info (self);
+
+  if (info->opacity != opacity)
     {
-      priv->opacity = opacity;
+      info->opacity = opacity;
 
       /* Queue a redraw from the flatten effect so that it can use
          its cached image if available instead of having to redraw the
@@ -11244,10 +11272,13 @@ void
 clutter_actor_set_opacity (ClutterActor *self,
 			   guint8        opacity)
 {
+  const ClutterPaintInfo *info;
+
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
+  info = _clutter_actor_peek_paint_info (self);
   _clutter_actor_create_transition (self, obj_props[PROP_OPACITY],
-                                    self->priv->opacity,
+                                    info->opacity,
                                     opacity);
 }
 
@@ -11265,6 +11296,7 @@ static guint8
 clutter_actor_get_paint_opacity_internal (ClutterActor *self)
 {
   ClutterActorPrivate *priv = self->priv;
+  const ClutterPaintInfo *info;
   ClutterActor *parent;
 
   /* override the top-level opacity to always be 255; even in
@@ -11277,6 +11309,8 @@ clutter_actor_get_paint_opacity_internal (ClutterActor *self)
   if (priv->opacity_override >= 0)
     return priv->opacity_override;
 
+  info = _clutter_actor_peek_paint_info (self);
+
   parent = priv->parent;
 
   /* Factor in the actual actors opacity with parents */
@@ -11284,11 +11318,11 @@ clutter_actor_get_paint_opacity_internal (ClutterActor *self)
     {
       guint8 opacity = clutter_actor_get_paint_opacity_internal (parent);
 
-      if (opacity != 0xff)
-        return (opacity * priv->opacity) / 0xff;
+      if (opacity != 255)
+        return (opacity * info->opacity) / 255;
     }
 
-  return priv->opacity;
+  return info->opacity;
 
 }
 
@@ -11333,7 +11367,7 @@ clutter_actor_get_opacity (ClutterActor *self)
 {
   g_return_val_if_fail (CLUTTER_IS_ACTOR (self), 0);
 
-  return self->priv->opacity;
+  return _clutter_actor_peek_paint_info (self)->opacity;
 }
 
 /**
@@ -11950,6 +11984,7 @@ clutter_actor_set_clip (ClutterActor *self,
                         gfloat        width,
                         gfloat        height)
 {
+  ClutterPaintInfo *info;
   ClutterActorPrivate *priv;
   GObject *obj;
 
@@ -11957,19 +11992,21 @@ clutter_actor_set_clip (ClutterActor *self,
 
   priv = self->priv;
 
+  info = _clutter_actor_get_paint_info (self);
+
   if (priv->has_clip &&
-      priv->clip.origin.x == xoff &&
-      priv->clip.origin.y == yoff &&
-      priv->clip.size.width == width &&
-      priv->clip.size.height == height)
+      info->clip.origin.x == xoff &&
+      info->clip.origin.y == yoff &&
+      info->clip.size.width == width &&
+      info->clip.size.height == height)
     return;
 
   obj = G_OBJECT (self);
 
-  priv->clip.origin.x = xoff;
-  priv->clip.origin.y = yoff;
-  priv->clip.size.width = width;
-  priv->clip.size.height = height;
+  info->clip.origin.x = xoff;
+  info->clip.origin.y = yoff;
+  info->clip.size.width = width;
+  info->clip.size.height = height;
 
   priv->has_clip = TRUE;
 
@@ -12042,6 +12079,7 @@ clutter_actor_get_clip (ClutterActor *self,
                         gfloat       *width,
                         gfloat       *height)
 {
+  const ClutterPaintInfo *info;
   ClutterActorPrivate *priv;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
@@ -12051,17 +12089,19 @@ clutter_actor_get_clip (ClutterActor *self,
   if (!priv->has_clip)
     return;
 
+  info = _clutter_actor_get_paint_info (self);
+
   if (xoff != NULL)
-    *xoff = priv->clip.origin.x;
+    *xoff = info->clip.origin.x;
 
   if (yoff != NULL)
-    *yoff = priv->clip.origin.y;
+    *yoff = info->clip.origin.y;
 
   if (width != NULL)
-    *width = priv->clip.size.width;
+    *width = info->clip.size.width;
 
   if (height != NULL)
-    *height = priv->clip.size.height;
+    *height = info->clip.size.height;
 }
 
 /**
@@ -17843,18 +17883,22 @@ clutter_actor_get_margin_right (ClutterActor *self)
 }
 
 static inline void
-clutter_actor_set_background_color_internal (ClutterActor *self,
+clutter_actor_set_background_color_internal (ClutterActor       *self,
                                              const ClutterColor *color)
 {
   ClutterActorPrivate *priv = self->priv;
+  ClutterPaintInfo *info;
   GObject *obj;
 
-  if (priv->bg_color_set && clutter_color_equal (color, &priv->bg_color))
+  info = _clutter_actor_get_paint_info (self);
+
+  if (priv->bg_color_set &&
+      clutter_color_equal (color, &info->bg_color))
     return;
 
   obj = G_OBJECT (self);
 
-  priv->bg_color = *color;
+  info->bg_color = *color;
   priv->bg_color_set = TRUE;
 
   clutter_actor_queue_redraw (self);
@@ -17886,10 +17930,13 @@ clutter_actor_set_background_color (ClutterActor       *self,
                                     const ClutterColor *color)
 {
   ClutterActorPrivate *priv;
+  const ClutterPaintInfo *info;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
 
   priv = self->priv;
+
+  info = _clutter_actor_peek_paint_info (self);
 
   if (color == NULL)
     {
@@ -17904,7 +17951,7 @@ clutter_actor_set_background_color (ClutterActor       *self,
   else
     _clutter_actor_create_transition (self,
                                       obj_props[PROP_BACKGROUND_COLOR],
-                                      &priv->bg_color,
+                                      &info->bg_color,
                                       color);
 }
 
@@ -17921,10 +17968,14 @@ void
 clutter_actor_get_background_color (ClutterActor *self,
                                     ClutterColor *color)
 {
+  const ClutterPaintInfo *info;
+
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (color != NULL);
 
-  *color = self->priv->bg_color;
+  info = _clutter_actor_peek_paint_info (self);
+
+  *color = info->bg_color;
 }
 
 /**

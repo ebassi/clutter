@@ -47,6 +47,14 @@ static const ClutterAnimationInfo default_animation_info = {
   NULL,         /* cur_state */
 };
 
+static const ClutterPaintInfo default_paint_info = {
+  CLUTTER_RECT_INIT_ZERO,               /* clip */
+
+  CLUTTER_COLOR_INIT_TRANSPARENT_WHITE, /* bg-color */
+
+  255,                                  /* opacity */
+};
+
 static void
 clutter_animation_info_clear (gpointer data)
 {
@@ -75,6 +83,7 @@ _clutter_actor_state_init (ClutterActorState *state,
   state->layout = default_layout_info;
   state->transform = default_transform_info;
   state->animation = default_animation_info;
+  state->paint = default_paint_info;
 
   state->actor = actor;
 
@@ -191,4 +200,20 @@ const ClutterAnimationInfo *
 _clutter_actor_peek_animation_info (ClutterActor *self)
 {
   return _clutter_actor_get_animation_info (self);
+}
+
+ClutterPaintInfo *
+_clutter_actor_get_paint_info (ClutterActor *self)
+{
+  ClutterActorState *state;
+
+  state = _clutter_actor_get_state (self);
+
+  return &(state->paint);
+}
+
+const ClutterPaintInfo *
+_clutter_actor_peek_paint_info (ClutterActor *self)
+{
+  return _clutter_actor_get_paint_info (self);
 }

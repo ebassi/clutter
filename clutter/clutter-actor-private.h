@@ -23,6 +23,7 @@
 #define __CLUTTER_ACTOR_PRIVATE_H__
 
 #include <clutter/clutter-actor.h>
+#include <clutter/clutter-color.h>
 
 G_BEGIN_DECLS
 
@@ -114,6 +115,9 @@ typedef struct _SizeRequest             SizeRequest;
 typedef struct _ClutterLayoutInfo       ClutterLayoutInfo;
 typedef struct _ClutterTransformInfo    ClutterTransformInfo;
 typedef struct _ClutterAnimationInfo    ClutterAnimationInfo;
+typedef struct _ClutterPaintInfo        ClutterPaintInfo;
+
+typedef struct _ClutterActorState       ClutterActorState;
 
 /* Internal helper struct to represent a point that can be stored in
    either direct pixel coordinates or as a fraction of the actor's
@@ -236,19 +240,30 @@ struct _ClutterAnimationInfo
 const ClutterAnimationInfo *    _clutter_actor_peek_animation_info      (ClutterActor *self);
 ClutterAnimationInfo *          _clutter_actor_get_animation_info       (ClutterActor *self);
 
-ClutterTransition *             _clutter_actor_create_transition                (ClutterActor *self,
-                                                                                 GParamSpec   *pspec,
-                                                                                 ...);
-ClutterTransition *             _clutter_actor_get_transition                   (ClutterActor *self,
-                                                                                 GParamSpec   *pspec);
+ClutterTransition *             _clutter_actor_create_transition        (ClutterActor *self,
+                                                                         GParamSpec   *pspec,
+                                                                         ...);
+ClutterTransition *             _clutter_actor_get_transition           (ClutterActor *self,
+                                                                         GParamSpec   *pspec);
 
-typedef struct _ClutterActorState       ClutterActorState;
+struct _ClutterPaintInfo
+{
+  ClutterRect clip;
+
+  ClutterColor bg_color;
+
+  guint8 opacity;
+};
+
+const ClutterPaintInfo *        _clutter_actor_peek_paint_info          (ClutterActor *self);
+ClutterPaintInfo *              _clutter_actor_get_paint_info           (ClutterActor *self);
 
 struct _ClutterActorState
 {
   ClutterLayoutInfo layout;
   ClutterTransformInfo transform;
   ClutterAnimationInfo animation;
+  ClutterPaintInfo paint;
 
   ClutterActor *actor;
 };
