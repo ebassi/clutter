@@ -167,6 +167,11 @@ struct _ClutterLayoutInfo
   /* fixed position coordinates */
   ClutterPoint fixed_pos;
 
+  struct {
+    ClutterSize minimum;
+    ClutterSize natural;
+  } fixed_size;
+
   ClutterMargin margin;
 
   guint x_align : 4;
@@ -174,9 +179,6 @@ struct _ClutterLayoutInfo
 
   guint x_expand : 1;
   guint y_expand : 1;
-
-  ClutterSize minimum;
-  ClutterSize natural;
 };
 
 const ClutterLayoutInfo *       _clutter_actor_peek_layout_info (ClutterActor *self);

@@ -29,6 +29,11 @@ static const ClutterTransformInfo default_transform_info = {
 static const ClutterLayoutInfo default_layout_info = {
   CLUTTER_POINT_INIT_ZERO,      /* fixed-pos */
 
+  {
+    CLUTTER_SIZE_INIT_ZERO,     /* minimum fixed size */
+    CLUTTER_SIZE_INIT_ZERO,     /* natural fixed size */
+  },
+
   { 0.f, 0.f, 0.f, 0.f },       /* margin */
 
   CLUTTER_ACTOR_ALIGN_FILL,     /* x-align */
@@ -36,9 +41,6 @@ static const ClutterLayoutInfo default_layout_info = {
   
   FALSE,                        /* x-expand */
   FALSE,                        /* y-expand */
-
-  CLUTTER_SIZE_INIT_ZERO,       /* minimum size */
-  CLUTTER_SIZE_INIT_ZERO,       /* natural size */
 };
 
 static const ClutterAnimationInfo default_animation_info = {
