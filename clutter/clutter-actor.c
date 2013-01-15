@@ -2362,7 +2362,6 @@ clutter_actor_set_allocation_internal (ClutterActor           *self,
   gboolean x1_changed, y1_changed, x2_changed, y2_changed;
   gboolean retval;
   ClutterActorBox old_alloc = { 0, };
-  ClutterLayoutInfo *layout_info;
 
   obj = G_OBJECT (self);
 
@@ -2377,19 +2376,6 @@ clutter_actor_set_allocation_internal (ClutterActor           *self,
 
   priv->allocation = *box;
   priv->allocation_flags = flags;
-
-  /* update the position (the origin of the actor in parent-relative
-   * coordinates) and the bounds (the painted rectangle of an actor,
-   * in actor-relative coordinates)
-   */
-  layout_info = _clutter_actor_get_layout_info (self);
-  layout_info->position.x = box->x1 - layout_info->margin.left;
-  layout_info->position.y = box->y1 - layout_info->margin.top;
-
-  layout_info->bounds.origin.x = layout_info->margin.left;
-  layout_info->bounds.origin.y = layout_info->margin.top;
-  layout_info->bounds.size.width = box->x2 - box->x1;
-  layout_info->bounds.size.height = box->y2 - box->y1;
 
   /* allocation is authoritative */
   priv->needs_width_request = FALSE;
@@ -9607,6 +9593,7 @@ clutter_actor_adjust_allocation (ClutterActor    *self,
   float nat_width, nat_height;
   ClutterRequestMode req_mode;
 
+  /* operate on a copy */
   adj_allocation = *allocation;
 
   clutter_actor_box_get_size (allocation, &alloc_width, &alloc_height);
@@ -9716,6 +9703,109 @@ clutter_actor_allocate_internal (ClutterActor           *self,
   clutter_actor_queue_redraw (self);
 }
 
+static inline void
+clutter_actor_adjust_frame (ClutterActor       *self,
+                            const ClutterRect  *frame,
+                            ClutterRect        *adjusted)
+{
+  ClutterRect adj;
+  ClutterSize minimum;
+  ClutterSize natural;
+
+  /* operate on a copy */
+  adj = *frame;
+
+  /* we want to hit the cache, so we use the public API */
+  if (self->priv->request_mode == CLUTTER_REQUEST_HEIGHT_FOR_WIDTH)
+    {
+      clutter_actor_get_preferred_width (self, -1,
+                                         &minimum.width,
+                                         &natural.width);
+      clutter_actor_get_preferred_height (self, adj.size.width,
+                                          &minimum.height,
+                                          &natural.height);
+    }
+  else if (self->priv->request_mode == CLUTTER_REQUEST_WIDTH_FOR_HEIGHT)
+    {
+      clutter_actor_get_preferred_height (self, -1,
+                                          &minimum.height,
+                                          &natural.height);
+      clutter_actor_get_preferred_width (self, adj.size.height,
+                                         &minimum.width,
+                                         &natural.width);
+    }
+
+#ifdef CLUTTER_ENABLE_DEBUG
+  /* warn about underallocations */
+  if (_clutter_diagnostic_enabled () &&
+      ((minimum.width - adj.size.width) <= 0 ||
+       (minimum.height - adjs.size.height) <= 0))
+    {
+      ClutterActor *parent = clutter_actor_get_parent (self);
+
+      /* the only actors that are allowed to be underallocated are the Stage,
+       * as it doesn't have an implicit size, and Actors that specifically
+       * told us that they want to opt-out from layout control mechanisms
+       * through the NO_LAYOUT escape hatch.
+       */
+      if (parent != NULL &&
+          !(self->flags & CLUTTER_ACTOR_NO_LAYOUT) != 0)
+        {
+          g_warning (G_STRLOC ": The actor '%s' is getting an allocation "
+                     "of %.2f x %.2f from its parent actor '%s', but its "
+                     "requested minimum size is of %.2f x %.2f",
+                     _clutter_actor_get_debug_name (self),
+                     adj.size.width, adj.size.height,
+                     _clutter_actor_get_debug_name (parent),
+                     minimum.width, minimum.height);
+        }
+    }
+#endif
+
+  /* we maintain the invariant that a frame cannot be adjusted
+   * to be outside the given one
+   */
+  if (adj.origin.x < frame->origin.x ||
+      adj.origin.y < frame->origin.y ||
+      adj.size.width > frame->size.width ||
+      adj.size.height > frame->size.height)
+    {
+      g_warning (G_STRLOC ": The actor '%s' tried to adjust its frame to "
+                 "{ %.2f, %.2f - %.2f x %.2f }, which is outside of its "
+                 "originally assigned frame of { %.2f, %.2f - %.2f x %.2f }; "
+                 "we are going to ignore the adjustment.",
+                 _clutter_actor_get_debug_name (self),
+                 adj.origin.x, adj.origin.y,
+                 adj.size.width, adj.size.height,
+                 frame->origin.x, frame->origin.y,
+                 frame->size.width, frame->size.height);
+      return;
+    }
+
+  *adjusted = adj;
+}
+
+static inline void
+clutter_actor_ensure_allocation (ClutterActor *self)
+{
+  const ClutterLayoutInfo *info;
+  ClutterActorBox box;
+
+  info = _clutter_actor_peek_layout_info (self);
+
+  /* recompute the allocation from the position, bounds, and margins */
+  box.x1 = info->position.x + info->margin.left;
+  box.y1 = info->position.y + info->margin.top;
+  box.x2 = box.x1
+         + info->bounds.size.width
+         + info->margin.right;
+  box.y2 = box.y1
+         + info->bounds.size.height
+         + info->margin.bottom;
+
+  clutter_actor_allocate_internal (self, &box, 0);
+}
+
 static void
 clutter_actor_set_bounds_internal (ClutterActor      *self,
                                    const ClutterRect *bounds)
@@ -9723,32 +9813,9 @@ clutter_actor_set_bounds_internal (ClutterActor      *self,
   ClutterLayoutInfo *info;
 
   info = _clutter_actor_get_layout_info (self);
-
-  CLUTTER_SET_PRIVATE_FLAGS (self, CLUTTER_IN_RELAYOUT);
-
-  info = _clutter_actor_get_layout_info (self);
   info->bounds = *bounds;
 
-  if (self->priv->parent != NULL &&
-      !CLUTTER_ACTOR_IN_RELAYOUT (self->priv->parent))
-    clutter_actor_queue_relayout (self);
-  else
-    {
-      ClutterActorBox box;
-
-      box.x1 = info->position.x + info->margin.left;
-      box.y1 = info->position.y + info->margin.top;
-      box.x2 = box.x1 + info->bounds.size.width;
-      box.y2 = box.y1 + info->bounds.size.height;
-
-      /* only relayout the children if the frame changed */
-      if (clutter_actor_set_allocation_internal (self, &box, 0))
-        clutter_actor_maybe_layout_children (self);
-    }
-
-  CLUTTER_UNSET_PRIVATE_FLAGS (self, CLUTTER_IN_RELAYOUT);
-
-  clutter_actor_queue_redraw (self);
+  clutter_actor_ensure_allocation (self);
 }
 
 static void
@@ -9759,43 +9826,22 @@ clutter_actor_set_frame_internal (ClutterActor      *self,
 
   info = _clutter_actor_get_layout_info (self);
 
-  CLUTTER_SET_PRIVATE_FLAGS (self, CLUTTER_IN_RELAYOUT);
-
   /* 1. the position of the actor is the origin of the frame */
-  info->position = frame->origin;
+  clutter_actor_adjust_position (self, frame, &info->position);
 
-  /* 2. the origin of the bounds are the margin */
-  info->bounds.origin.x = info->margin.left;
-  info->bounds.origin.y = info->margin.top;
-
-  /* 3a. the size of the bounds is the size of the frame, minus the margins */
-  info->bounds.size.width = frame->size.width
-                          - info->margin.left
-                          - info->margin.right;
+  /* 2. the size of the bounds is the size of the frame, minus the margins */
+  info->bounds.size.width  = frame->size.width
+                           - info->margin.left
+                           - info->margin.right;
   info->bounds.size.height = frame->size.height
                            - info->margin.top
                            - info->margin.bottom;
 
-  /* 3b. the size must be greater than or equal to zero */
-  info->bounds.size.width = MAX (info->bounds.size.width, 0.f);
+  /* 3. the size must be greater than or equal to zero */
+  info->bounds.size.width  = MAX (info->bounds.size.width,  0.f);
   info->bounds.size.height = MAX (info->bounds.size.height, 0.f);
 
-  {
-    ClutterActorBox box;
-
-    box.x1 = info->position.x + info->margin.left;
-    box.y1 = info->position.y + info->margin.top;
-    box.x2 = box.x1 + info->bounds.size.width;
-    box.y2 = box.y1 + info->bounds.size.height;
-
-    /* only relayout the children if the frame changed */
-    if (clutter_actor_set_allocation_internal (self, &box, 0))
-      clutter_actor_maybe_layout_children (self);
-
-    clutter_actor_queue_redraw (self);
-  }
-
-  CLUTTER_UNSET_PRIVATE_FLAGS (self, CLUTTER_IN_RELAYOUT);
+  clutter_actor_ensure_allocation (self);
 }
 
 /**
@@ -9811,8 +9857,8 @@ clutter_actor_set_frame_internal (ClutterActor      *self,
  *
  * This function will adjust the stored allocation to take into account
  * the alignment flags set in the #ClutterActor:x-align and
- * #ClutterActor:y-align properties, if the #ClutterActor:x-expand and
- * the #ClutterActor:y-expand properties are set to %TRUE.
+ * #ClutterActor:y-align properties if the actor is given an allocation
+ * larger than its preferred size.
  *
  * This function will respect the easing state of the #ClutterActor and
  * interpolate between the current allocation and the new one.
@@ -9861,7 +9907,7 @@ clutter_actor_allocate (ClutterActor           *self,
   if (real_allocation.x2 < real_allocation.x1 ||
       real_allocation.y2 < real_allocation.y1)
     {
-      g_warning (G_STRLOC ": Actor '%s' tried to allocate a size of %.2f x %.2f",
+      g_warning (G_STRLOC ": Actor '%s' tried to allocate a negative size of %.2f x %.2f",
                  _clutter_actor_get_debug_name (self),
                  real_allocation.x2 - real_allocation.x1,
                  real_allocation.y2 - real_allocation.y1);
@@ -20158,32 +20204,18 @@ void
 clutter_actor_set_bounds (ClutterActor      *self,
                           const ClutterRect *bounds)
 {
-  ClutterLayoutInfo *info;
+  const ClutterLayoutInfo *info;
+  ClutterRect old_bounds;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (bounds != NULL);
 
-  info = _clutter_actor_get_layout_info (self);
-  info->bounds = *bounds;
+  info = _clutter_actor_peek_layout_info (self);
+  old_bounds = info->bounds;
 
-  if (self->priv->parent != NULL &&
-      !CLUTTER_ACTOR_IN_RELAYOUT (self->priv->parent))
-    clutter_actor_queue_relayout (self);
-  else
-    {
-      ClutterActorBox box;
-
-      box.x1 = info->position.x + info->margin.left;
-      box.y1 = info->position.y + info->margin.top;
-      box.x2 = box.x1 + info->bounds.size.width;
-      box.y2 = box.y1 + info->bounds.size.height;
-
-      /* only relayout the children if the frame changed */
-      if (clutter_actor_set_allocation_internal (self, &box, 0))
-        clutter_actor_maybe_layout_children (self);
-
-      clutter_actor_queue_redraw (self);
-    }
+  _clutter_actor_create_transition (self, obj_props[PROP_BOUNDS],
+                                    &old_bounds,
+                                    bounds);
 }
 
 /**
@@ -20235,9 +20267,16 @@ clutter_actor_get_bounds (ClutterActor *self,
  * to compute the #ClutterActor:position and the #ClutterActor:bounds
  * properties of #ClutterActor.
  *
- * This function should only be used when laying out the children of a
- * #ClutterActor; to get the normalized paint region of an actor, you should
- * use clutter_actor_get_bounds().
+ * Whenever a new @frame is set, the #ClutterRect.origin of the
+ * #ClutterActor:bounds is left undisturbed; the #ClutterRect.size of the
+ * #ClutterActor:bounds is set to the width of the @frame minus the
+ * #ClutterActor:margin-left and #ClutterActor:margin-right values, and
+ * to the height of the @frame minus the #ClutterActor:margin-top and
+ * #ClutterActor:margin-bottom values.
+ *
+ * When painting a #ClutterActor, or when laying out the children of a
+ * #ClutterActor, it's preferred to use the #ClutterActor:bounds value, as
+ * it's been already normalized with the paintable area.
  *
  * Since: 1.14
  */
@@ -20245,18 +20284,18 @@ void
 clutter_actor_set_frame (ClutterActor      *self,
                          const ClutterRect *frame)
 {
-  ClutterLayoutInfo *info;
+  const ClutterLayoutInfo *info;
   ClutterRect old_frame;
 
   g_return_if_fail (CLUTTER_IS_ACTOR (self));
   g_return_if_fail (frame != NULL);
 
-  info = _clutter_actor_get_layout_info (self);
+  info = _clutter_actor_peek_layout_info (self);
 
   old_frame.origin = info->position;
-  old_frame.size.width = info->margin.left
-                       + info->bounds.size.width
-                       + info->margin.right;
+  old_frame.size.width  = info->margin.left
+                        + info->bounds.size.width
+                        + info->margin.right;
   old_frame.size.height = info->margin.top
                         + info->bounds.size.height
                         + info->margin.bottom;
@@ -20274,7 +20313,9 @@ clutter_actor_set_frame (ClutterActor      *self,
  * Retrieves the frame of a #ClutterActor.
  *
  * The frame is a rectangle with an origin expressed in parent-relative
- * coordinates, and the size including the margins of the actor.
+ * coordinates with the #ClutterRect.origin set to the #ClutterActor:position
+ * value, and the #ClutterRect.size set to the #ClutterActor:bounds value,
+ * but including the margins of the #ClutterActor.
  *
  * Since: 1.14
  */
@@ -20296,9 +20337,9 @@ clutter_actor_get_frame (ClutterActor *self,
 
   info = _clutter_actor_peek_layout_info (self);
 
-  adjusted_width = info->margin.left
-                 + info->bounds.size.width
-                 + info->margin.right;
+  adjusted_width  = info->margin.left
+                  + info->bounds.size.width
+                  + info->margin.right;
   adjusted_height = info->margin.top
                   + info->bounds.size.height
                   + info->margin.bottom;
